@@ -7,7 +7,7 @@ import threading
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Qt, Signal
+from PySide6.QtCore import QEvent, QThread, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -104,6 +104,103 @@ class _BaselineCombo(QComboBox):
             super().dropEvent(event)
 
 
+class _BaselineDropZone(QFrame):
+    """基准行：整行可接收资源管理器文件拖放（包括子控件上的拖放）。
+
+    QComboBox 自身会消费 Drag/Drop，且其弹出列表是独立窗口；因此在整行框架
+    安装递归事件过滤器，保证从“基准”文字、下拉框、提示或选择按钮上放下文件
+    都能被识别。
+    """
+
+    paths_dropped = Signal(list)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("baselineZone")
+        self.setAcceptDrops(True)
+        self._app_filter_installed = False
+
+    def install_drop_proxy(self) -> None:
+        widgets = [self, *self.findChildren(QWidget)]
+        for widget in widgets:
+            try:
+                widget.setAcceptDrops(True)
+                widget.installEventFilter(self)
+            except RuntimeError:
+                continue
+        # 某些平台/Qt 样式中，拖放事件目标可能是 QComboBox 的内部子控件；
+        # 再挂一层应用级过滤器，按“鼠标是否落在基准行”兜底。
+        try:
+            if not self._app_filter_installed:
+                from PySide6.QtWidgets import QApplication
+
+                app = QApplication.instance()
+                if app is not None:
+                    app.installEventFilter(self)
+                    self._app_filter_installed = True
+        except Exception:
+            pass
+
+    def _inside_zone(self, obj, event) -> bool:
+        if not self.isVisible():
+            return False
+        try:
+            pos = event.position().toPoint()
+        except Exception:
+            try:
+                pos = event.pos()
+            except Exception:
+                return False
+        try:
+            if isinstance(obj, QWidget):
+                global_pos = obj.mapToGlobal(pos)
+                return self.rect().contains(self.mapFromGlobal(global_pos))
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def _url_paths(mime) -> list[str]:
+        if mime is None or not mime.hasUrls():
+            return []
+        return [u.toLocalFile() for u in mime.urls() if u.isLocalFile()]
+
+    def _accept(self, event) -> bool:
+        if self._url_paths(event.mimeData()):
+            event.acceptProposedAction()
+            return True
+        return False
+
+    def eventFilter(self, obj, event):  # noqa: N802
+        etype = event.type()
+        if etype in (QEvent.Type.DragEnter, QEvent.Type.DragMove):
+            if self._accept(event) and (obj is self or isinstance(obj, QWidget) and self._inside_zone(obj, event)):
+                return True
+        elif etype == QEvent.Type.Drop:
+            paths = self._url_paths(event.mimeData())
+            if paths and (obj is self or isinstance(obj, QWidget) and self._inside_zone(obj, event)):
+                self.paths_dropped.emit(paths)
+                event.acceptProposedAction()
+                return True
+        return super().eventFilter(obj, event)
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802
+        if not self._accept(event):
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event) -> None:  # noqa: N802
+        if not self._accept(event):
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
+        paths = self._url_paths(event.mimeData())
+        if paths:
+            self.paths_dropped.emit(paths)
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
+
+
 class BatchWorker(QThread):
     progress = Signal(int, str)
     candidate_done = Signal(object)
@@ -192,16 +289,34 @@ class BatchCompareDialog(QDialog):
         fp = QVBoxLayout(file_panel)
         fp.setContentsMargins(10, 8, 10, 8)
         fp.setSpacing(6)
-        fph = QHBoxLayout()
+        self.baseline_zone = _BaselineDropZone()
+        self.baseline_zone.setMinimumHeight(42)
+        fph = QHBoxLayout(self.baseline_zone)
+        fph.setContentsMargins(8, 5, 8, 5)
+        fph.setSpacing(6)
         self.lbl_baseline = QLabel("基准：")
         fph.addWidget(self.lbl_baseline)
         self.combo_baseline = _BaselineCombo()
         self.combo_baseline.setMinimumWidth(220)
         self.combo_baseline.paths_dropped.connect(self._set_baseline_from_paths)
         fph.addWidget(self.combo_baseline, 1)
+        self.btn_pick_baseline = QPushButton("选择…")
+        self.btn_pick_baseline.setObjectName("tool")
+        self.btn_pick_baseline.setToolTip("手动选择基准文件；也可以直接把文件拖到这一行")
+        fph.addWidget(self.btn_pick_baseline)
+        self.lbl_baseline_hint = QLabel("可拖入文件")
+        fph.addWidget(self.lbl_baseline_hint)
+        self.baseline_zone.paths_dropped.connect(self._set_baseline_from_paths)
+        self.baseline_zone.install_drop_proxy()
+        fp.addWidget(self.baseline_zone)
+
+        all_head = QHBoxLayout()
+        self.lbl_all = QLabel("全部：")
+        all_head.addWidget(self.lbl_all)
+        all_head.addStretch(1)
         self.lbl_count = QLabel("共 0 个文件")
-        fph.addWidget(self.lbl_count)
-        fp.addLayout(fph)
+        all_head.addWidget(self.lbl_count)
+        fp.addLayout(all_head)
 
         self.file_list = _FileList()
         self.file_list.setMaximumHeight(150)
@@ -209,7 +324,7 @@ class BatchCompareDialog(QDialog):
         fp.addWidget(self.file_list, 1)
 
         btn_row = QHBoxLayout()
-        self.btn_add = QPushButton("添加文件…")
+        self.btn_add = QPushButton("选择文件…")
         self.btn_add.setObjectName("tool")
         self.btn_remove = QPushButton("移除选中")
         self.btn_remove.setObjectName("tool")
@@ -291,6 +406,7 @@ class BatchCompareDialog(QDialog):
         root.addLayout(close_row)
 
         self.btn_add.clicked.connect(self._choose_files)
+        self.btn_pick_baseline.clicked.connect(self._choose_baseline)
         self.btn_remove.clicked.connect(self._remove_selected)
         self.btn_clear.clicked.connect(self.file_list.clear)
         self.btn_start.clicked.connect(self._start)
@@ -324,6 +440,12 @@ class BatchCompareDialog(QDialog):
         self.lbl_summary.setStyleSheet(f"font-weight:600;color:{p.text};")
         self.lbl_status.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_result_empty.setStyleSheet(f"color:{p.text_secondary};")
+        self.lbl_all.setStyleSheet(f"font-weight:600;color:{p.text};")
+        self.lbl_baseline_hint.setStyleSheet(f"color:{p.text_secondary};font-size:9pt;")
+        self.baseline_zone.setStyleSheet(
+            f"QFrame#baselineZone {{ background:{p.secondary_surface};"
+            f"border:1px dashed {p.border_strong}; border-radius:6px; }}"
+        )
         self.table.setStyleSheet(
             f"QTableWidget {{ background:{p.card_bg}; border:1px solid {p.divider};"
             f"gridline-color:{p.divider}; color:{p.text}; }}"
@@ -395,6 +517,13 @@ class BatchCompareDialog(QDialog):
             except Exception:
                 continue
         self.lbl_status.setText("基准已切换；点击“重新比较”生成新的差异矩阵。")
+
+    def _choose_baseline(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择基准文件（会自动加入全部文件）", "", SUPPORTED_DIALOG_FILTER
+        )
+        if path:
+            self._set_baseline_from_paths([path])
 
     def _choose_files(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(
@@ -544,6 +673,8 @@ class BatchCompareDialog(QDialog):
         self.btn_clear.setEnabled(not running)
         self.file_list.setEnabled(not running)
         self.combo_baseline.setEnabled(not running and self.file_list.count() > 0)
+        self.btn_pick_baseline.setEnabled(not running)
+        self.baseline_zone.setEnabled(not running)
         self.btn_cancel.setVisible(running)
         self.btn_cancel.setEnabled(running)
 

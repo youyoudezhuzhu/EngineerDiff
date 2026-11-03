@@ -79,5 +79,5 @@ CODE_SIGN_PFX_PASSWORD
 - 虚拟机；
 - 等待签名版发布。
 
-当前 [v1.2.1 Release](https://github.com/youyoudezhuzhu/engineerdiff/releases) 是未签名构建，
+当前 [v1.2.2 Release](https://github.com/youyoudezhuzhu/engineerdiff/releases) 是未签名构建，
 请仅在你信任来源的前提下核对 SHA-256 后使用。

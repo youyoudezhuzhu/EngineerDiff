@@ -71,7 +71,6 @@ def main(argv: list[str] | None = None) -> int:
         pass
     app = QApplication(argv)
     app.setApplicationName(version.APP_NAME)
-    app.setApplicationDisplayName(version.APP_NAME_CN)
     app.setOrganizationName(version.ORG_NAME)
     app.setApplicationVersion(version.__version__)
     app.setStyle("Fusion")

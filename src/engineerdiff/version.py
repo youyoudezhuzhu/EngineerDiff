@@ -1,6 +1,7 @@
 """版本信息。构建时由脚本校验。"""
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 APP_NAME = "EngineerDiff"
 APP_NAME_CN = "EngineerDiff 工程文件差异比较"
 ORG_NAME = "EngineerDiff"
 AUTHOR = "jzh"
+WINDOW_TITLE = f"{APP_NAME}工程文件差异比较 by {AUTHOR}"

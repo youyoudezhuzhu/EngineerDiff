@@ -28,7 +28,7 @@ EngineerDiff（**by jzh**）是一个 **Windows 本地、完全离线** 的工�
 
 ### 2.1 安装包安装（推荐）
 
-1. 运行 `EngineerDiff-1.2.1-Setup-x64.exe`。
+1. 运行 `EngineerDiff-1.2.2-Setup-x64.exe`。
 2. 按向导完成安装。默认 **仅为当前用户安装**，安装目录为：
 
    ```text
@@ -48,13 +48,13 @@ EngineerDiff（**by jzh**）是一个 **Windows 本地、完全离线** 的工�
 > [Windows Defender 误报处理](windows-defender.md)。校验方法（PowerShell）：
 >
 > ```powershell
-> Get-FileHash .\EngineerDiff-1.2.1-Setup-x64.exe -Algorithm SHA256
+> Get-FileHash .\EngineerDiff-1.2.2-Setup-x64.exe -Algorithm SHA256
 > ```
 
 **静默安装**（批处理/内网分发，Inno Setup 标准参数）：
 
 ```bat
-EngineerDiff-1.2.1-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+EngineerDiff-1.2.2-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 ```
 
 需要为所有用户安装时，可由管理员执行 `/ALLUSERS`（此模式会写入
@@ -77,7 +77,7 @@ EngineerDiff-1.2.1-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
 ### 2.3 便携版（免安装）
 
-将 `EngineerDiff-1.2.1-portable-win64.zip` 解压到任意可写目录后，直接运行
+将 `EngineerDiff-1.2.2-portable-win64.zip` 解压到任意可写目录后，直接运行
 `EngineerDiff.exe`。**必须保留解压后的完整目录结构**（`EngineerDiff.exe` 与
 `_internal\` 目录不可分开移动/删除，OCR 模型与 Qt 插件都在其中）。
 

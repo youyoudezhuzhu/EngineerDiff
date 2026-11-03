@@ -297,6 +297,17 @@ def apply_theme(mode_name: str | None = None, app=None) -> Palette:
     return _ACTIVE
 
 
+def set_native_title(window, text: str) -> None:
+    """Windows: 将原生标题栏文本精确设置为 ``text``，避免 Qt 追加应用显示名。"""
+    if sys.platform != "win32":
+        return
+    try:
+        hwnd = int(window.winId())
+        ctypes.windll.user32.SetWindowTextW(hwnd, str(text))
+    except Exception:
+        pass
+
+
 def apply_dark_title_bar(window) -> None:
     """Windows 10/11: 让原生标题栏跟随深色主题；失败时静默忽略。"""
     if sys.platform != "win32":

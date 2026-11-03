@@ -42,7 +42,9 @@ def test_main_navigation_and_dark_theme(qapp):
     win = MainWindow()
     win.show()
     qapp.processEvents()
-    assert win.windowTitle() == "EngineerDiff by jzh"
+    assert win.windowTitle() == "EngineerDiff工程文件差异比较 by jzh"
+    assert win.btn_pick_left.text() == "选择"
+    assert win.btn_pick_right.text() == "选择"
     assert win.pages.count() == 2
     assert win.nav.count() == 2
     win.nav.setCurrentIndex(1)
@@ -119,4 +121,26 @@ def test_batch_baseline_can_be_set_from_drop_paths(qapp, tmp_path: Path):
     dlg._add_paths([str(c)])
     dlg._set_baseline_from_paths([str(c)])
     assert Path(dlg.combo_baseline.currentData()).resolve() == c.resolve()
+    assert dlg.lbl_all.text() == "全部："
+    assert dlg.file_list.count() == 3
+    dlg.close()
+
+
+@pytest.mark.gui
+def test_baseline_drop_event_is_handled(qapp, tmp_path: Path):
+    from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl
+    from PySide6.QtGui import QDropEvent
+
+    from engineerdiff.ui.batch_dialog import BatchCompareDialog
+
+    a = tmp_path / "a.txt"; a.write_text("a\n", encoding="utf-8")
+    c = tmp_path / "c.txt"; c.write_text("c\n", encoding="utf-8")
+    dlg = BatchCompareDialog(None, AppSettings(), str(a))
+    dlg.show()
+    qapp.processEvents()
+    mime = QMimeData(); mime.setUrls([QUrl.fromLocalFile(str(c))])
+    event = QDropEvent(QPointF(12, 12), Qt.DropAction.CopyAction, mime,
+                       Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+    assert dlg.baseline_zone.eventFilter(dlg.combo_baseline, event) is True
+    assert dlg.file_list.count() == 2
     dlg.close()

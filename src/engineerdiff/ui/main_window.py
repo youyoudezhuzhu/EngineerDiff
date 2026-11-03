@@ -57,7 +57,7 @@ from .workers import CompareWorker
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"{version.APP_NAME} by {version.AUTHOR}")
+        self.setWindowTitle(version.WINDOW_TITLE)
         self.resize(1440, 900)
         self.setMinimumSize(1050, 680)
         self._settings = AppSettings()
@@ -102,6 +102,17 @@ class MainWindow(QMainWindow):
         self._update_ui_state()
 
     # ================================================================== UI
+    def showEvent(self, event) -> None:  # noqa: N802
+        super().showEvent(event)
+        # 某些 Windows/Qt 组合会把 applicationDisplayName 追加到原生标题；
+        # 显示后强制写一次 HWND 文本，保证标题栏就是用户要求的精确文本。
+        try:
+            from PySide6.QtCore import QTimer
+
+            QTimer.singleShot(0, lambda: theme.set_native_title(self, version.WINDOW_TITLE))
+        except Exception:
+            pass
+
     def _build_ui(self) -> None:
         central = QWidget()
         self.setCentralWidget(central)
@@ -152,8 +163,8 @@ class MainWindow(QMainWindow):
         row1.setSpacing(6)
         self.left_edit = self._make_path_edit("选择基准文件 A（左）")
         self.right_edit = self._make_path_edit("选择待比较文件 B（右）")
-        self.btn_pick_left = self._tool_button("选择 A…", "选择基准文件 A")
-        self.btn_pick_right = self._tool_button("选择 B…", "选择待比较文件 B")
+        self.btn_pick_left = self._tool_button("选择", "选择基准文件 A")
+        self.btn_pick_right = self._tool_button("选择", "选择待比较文件 B")
         self.btn_reload_left = self._tool_button("↻", "重新加载 A 并重新比较")
         self.btn_reload_right = self._tool_button("↻", "重新加载 B 并重新比较")
         self.btn_swap = self._tool_button("⇄", "交换左右文件")
