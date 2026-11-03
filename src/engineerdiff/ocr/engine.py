@@ -242,7 +242,7 @@ class OcrService:
         except OSError as exc:
             raise OcrError(f"无法读取图片：{path}（{exc}）") from exc
         profile = self._profile_for_size(width, height)
-        cache_key = f"{profile}:{digest}"
+        cache_key = f"{profile}-{digest}"
 
         # ---------- 缓存 ----------
         cached = self._cache.load(cache_key)
