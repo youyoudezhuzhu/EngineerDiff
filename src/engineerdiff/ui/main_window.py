@@ -57,7 +57,7 @@ from .workers import CompareWorker
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"{version.APP_NAME} {version.__version__} — 工程文件差异比较")
+        self.setWindowTitle(f"{version.APP_NAME} by {version.AUTHOR}")
         self.resize(1440, 900)
         self.setMinimumSize(1050, 680)
         self._settings = AppSettings()
@@ -115,17 +115,8 @@ class MainWindow(QMainWindow):
         hl = QHBoxLayout(header)
         hl.setContentsMargins(4, 2, 4, 2)
         hl.setSpacing(8)
-        self.lbl_brand = QLabel("EngineerDiff")
-        self.lbl_brand.setObjectName("brandTitle")
-        self.lbl_subtitle = QLabel("工程文件差异比较")
-        self.lbl_subtitle.setObjectName("brandSubtitle")
-        self.lbl_author = QLabel(f"by {version.AUTHOR}")
-        self.lbl_author.setObjectName("brandAuthor")
-        self.lbl_author.setToolTip(f"开发者：{version.AUTHOR}")
-        hl.addWidget(self.lbl_brand)
-        hl.addWidget(self.lbl_subtitle)
-        hl.addWidget(self.lbl_author)
-        hl.addSpacing(14)
+        # 原生 Windows 标题栏已显示“EngineerDiff by jzh”，窗口内不再重复品牌行；
+        # 顶部只保留工作模式导航与设置，减少视觉噪声。
         self.nav = QTabBar()
         self.nav.setObjectName("modeNav")
         self.nav.addTab("单文件比较")

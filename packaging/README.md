@@ -43,8 +43,8 @@ scripts/build_linux_check.sh --skip-self-test
 
 ```text
 dist\EngineerDiff\EngineerDiff.exe                     PyInstaller one-dir（含 _internal\）
-release\EngineerDiff-1.2.0-Setup-x64.exe               Inno Setup 安装包（默认 per-user）
-release\EngineerDiff-1.2.0-portable-win64.zip          便携版 zip
+release\EngineerDiff-1.2.1-Setup-x64.exe               Inno Setup 安装包（默认 per-user）
+release\EngineerDiff-1.2.1-portable-win64.zip          便携版 zip
 release\sha256sums.txt                                 以上文件的 SHA-256
 build\windows-build-summary.json                       构建摘要（版本/ISCC/大小/哈希）
 build\self-test-report.json                            dist 产物自检报告

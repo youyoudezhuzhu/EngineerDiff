@@ -46,14 +46,10 @@ class SidePane(QFrame):
         h = QHBoxLayout(header)
         h.setContentsMargins(10, 6, 10, 6)
         h.setSpacing(8)
-        self.badge = QLabel(side.upper())
-        self.badge.setFixedSize(22, 22)
-        self.badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.name_label = QLabel("未选择文件")
         self.name_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.meta_label = QLabel("")
         self.meta_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        h.addWidget(self.badge)
         h.addWidget(self.name_label, 1)
         h.addWidget(self.meta_label)
         self._layout.addWidget(header)
@@ -83,10 +79,6 @@ class SidePane(QFrame):
         self._header.setStyleSheet(
             f"QWidget#sideHeader {{ background:{p.secondary_surface}; border-bottom:1px solid {p.divider};"
             "border-top-left-radius:8px; border-top-right-radius:8px; }"
-        )
-        self.badge.setStyleSheet(
-            f"background:{p.accent if self.side == 'left' else p.text_secondary};color:white;"
-            "border-radius:4px;font-weight:600;font-size:10pt;"
         )
         self.name_label.setStyleSheet(f"font-weight:600;color:{p.text};")
         self.meta_label.setStyleSheet(f"color:{p.text_secondary};font-size:9pt;")

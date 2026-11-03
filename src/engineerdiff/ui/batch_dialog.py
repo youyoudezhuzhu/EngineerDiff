@@ -72,6 +72,38 @@ class _FileList(QListWidget):
             super().dropEvent(event)
 
 
+class _BaselineCombo(QComboBox):
+    """基准下拉框：支持从资源管理器把文件直接拖上来设为基准。"""
+
+    paths_dropped = Signal(list)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setToolTip("选择基准文件；也可以把文件直接拖到此处设为基准")
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event) -> None:  # noqa: N802
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
+        if event.mimeData().hasUrls():
+            paths = [u.toLocalFile() for u in event.mimeData().urls() if u.isLocalFile()]
+            if paths:
+                self.paths_dropped.emit(paths)
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
+
+
 class BatchWorker(QThread):
     progress = Signal(int, str)
     candidate_done = Signal(object)
@@ -142,7 +174,8 @@ class BatchCompareDialog(QDialog):
         self.lbl_page_title.setObjectName("pageTitle")
         root.addWidget(self.lbl_page_title)
         hint = QLabel(
-            "默认第一个文件为基准，可在下方下拉框更换；其余文件依次与基准比较。"
+            "默认第一个文件为基准；可在下方下拉框更换，或把文件直接拖到基准框。"
+            "其余文件依次与基准比较。"
             "同一位置只要有任意一个文件不同，整行标红（或关系）。"
         )
         hint.setWordWrap(True)
@@ -162,9 +195,9 @@ class BatchCompareDialog(QDialog):
         fph = QHBoxLayout()
         self.lbl_baseline = QLabel("基准：")
         fph.addWidget(self.lbl_baseline)
-        self.combo_baseline = QComboBox()
+        self.combo_baseline = _BaselineCombo()
         self.combo_baseline.setMinimumWidth(220)
-        self.combo_baseline.setToolTip("选择基准文件；更换后点击“开始批量比较/重新比较”")
+        self.combo_baseline.paths_dropped.connect(self._set_baseline_from_paths)
         fph.addWidget(self.combo_baseline, 1)
         self.lbl_count = QLabel("共 0 个文件")
         fph.addWidget(self.lbl_count)
@@ -340,6 +373,28 @@ class BatchCompareDialog(QDialog):
             item.setToolTip(info.path)
             self.file_list.addItem(item)
             existing.add(info.path)
+
+    def _set_baseline_from_paths(self, paths: list[str]) -> None:
+        """把拖到基准下拉框上的文件加入列表并设为基准。"""
+        if not paths:
+            return
+        self._add_paths(paths)
+        target = paths[0]
+        try:
+            target_resolved = Path(target).resolve()
+        except Exception:
+            target_resolved = Path(target)
+        for i in range(self.combo_baseline.count()):
+            data = self.combo_baseline.itemData(i)
+            if not data:
+                continue
+            try:
+                if Path(data).resolve() == target_resolved:
+                    self.combo_baseline.setCurrentIndex(i)
+                    break
+            except Exception:
+                continue
+        self.lbl_status.setText("基准已切换；点击“重新比较”生成新的差异矩阵。")
 
     def _choose_files(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(

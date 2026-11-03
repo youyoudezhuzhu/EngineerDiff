@@ -42,6 +42,7 @@ def test_main_navigation_and_dark_theme(qapp):
     win = MainWindow()
     win.show()
     qapp.processEvents()
+    assert win.windowTitle() == "EngineerDiff by jzh"
     assert win.pages.count() == 2
     assert win.nav.count() == 2
     win.nav.setCurrentIndex(1)
@@ -105,3 +106,17 @@ def test_author_metadata():
     from engineerdiff import version
 
     assert version.AUTHOR == "jzh"
+
+
+@pytest.mark.gui
+def test_batch_baseline_can_be_set_from_drop_paths(qapp, tmp_path: Path):
+    from engineerdiff.ui.batch_dialog import BatchCompareDialog
+
+    a = tmp_path / "a.txt"; a.write_text("a\n", encoding="utf-8")
+    b = tmp_path / "b.txt"; b.write_text("b\n", encoding="utf-8")
+    c = tmp_path / "c.txt"; c.write_text("c\n", encoding="utf-8")
+    dlg = BatchCompareDialog(None, AppSettings(), str(a), str(b))
+    dlg._add_paths([str(c)])
+    dlg._set_baseline_from_paths([str(c)])
+    assert Path(dlg.combo_baseline.currentData()).resolve() == c.resolve()
+    dlg.close()
