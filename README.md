@@ -54,6 +54,10 @@ Paddle / ONNX Runtime**。
 
 ![关于 EngineerDiff：by jzh](docs/screenshots/about.png)
 
+改造前后对比（左侧 1.1.0，右侧 1.2.0）：
+
+![UI 改造前后对比](docs/screenshots/ui-before-after.png)
+
 ## 系统要求
 
 - Windows 10 / 11 x64；默认按当前用户安装，无需管理员权限；
