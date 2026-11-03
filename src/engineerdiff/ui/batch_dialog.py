@@ -292,7 +292,7 @@ class BatchCompareDialog(QDialog):
         # 基准框与全部文件框使用同一种 ImportBox 视觉；只有高度不同。
         self.baseline_zone = _BaselineDropZone()
         self.baseline_zone.setObjectName("importBox")
-        self.baseline_zone.setMinimumHeight(74)
+        self.baseline_zone.setMinimumHeight(88)
         bz = QVBoxLayout(self.baseline_zone)
         bz.setContentsMargins(10, 7, 10, 6)
         bz.setSpacing(4)
@@ -310,8 +310,7 @@ class BatchCompareDialog(QDialog):
         self.combo_baseline.setVisible(False)
         self.combo_baseline.setMinimumWidth(220)
         self.baseline_list = _FileList(self.baseline_zone)
-        self.baseline_list.setMaximumHeight(46)
-        self.baseline_list.setMinimumHeight(38)
+        self.baseline_list.setFixedHeight(36)
         self.baseline_list.setToolTip("拖动文件到基准框可设为基准；也可点击右侧“选择”")
         self.baseline_list.paths_dropped.connect(self._set_baseline_from_paths)
         bz.addLayout(fph)
@@ -333,6 +332,17 @@ class BatchCompareDialog(QDialog):
         ah.addStretch(1)
         self.lbl_count = QLabel("共 0 个文件")
         ah.addWidget(self.lbl_count)
+        ah.addStretch(1)
+        self.btn_remove = QPushButton("移除选中")
+        self.btn_remove.setObjectName("tool")
+        self.btn_clear = QPushButton("清空")
+        self.btn_clear.setObjectName("tool")
+        self.btn_set_baseline = QPushButton("设为基准")
+        self.btn_set_baseline.setObjectName("tool")
+        self.btn_set_baseline.setToolTip("把全部文件中选中的文件设为基准")
+        ah.addWidget(self.btn_remove)
+        ah.addWidget(self.btn_clear)
+        ah.addWidget(self.btn_set_baseline)
         self.btn_add = QPushButton("选择")
         self.btn_add.setObjectName("tool")
         self.btn_add.setToolTip("手动选择一个或多个文件加入全部文件")
@@ -347,16 +357,6 @@ class BatchCompareDialog(QDialog):
         fp.addWidget(self.all_zone, 1)
 
         btn_row = QHBoxLayout()
-        self.btn_remove = QPushButton("移除选中")
-        self.btn_remove.setObjectName("tool")
-        self.btn_clear = QPushButton("清空")
-        self.btn_clear.setObjectName("tool")
-        self.btn_set_baseline = QPushButton("设为基准")
-        self.btn_set_baseline.setObjectName("tool")
-        self.btn_set_baseline.setToolTip("把全部文件中选中的文件设为基准")
-        btn_row.addWidget(self.btn_remove)
-        btn_row.addWidget(self.btn_clear)
-        btn_row.addWidget(self.btn_set_baseline)
         btn_row.addStretch(1)
         self.btn_start = QPushButton("开始批量比较")
         self.btn_start.setObjectName("primary")
@@ -480,8 +480,8 @@ class BatchCompareDialog(QDialog):
             f"QTableWidget::item:selected {{ background:{p.accent_soft}; color:{p.text}; }}"
         )
         list_style = (
-            f"QListWidget {{ background:{p.card_bg}; border:1px solid {p.divider};"
-            f"border-radius:4px;padding:4px;color:{p.text}; }}"
+            f"QListWidget {{ background:{p.card_bg}; border:none;"
+            f"border-radius:0;padding:2px 4px;color:{p.text}; }}"
             f"QListWidget::item {{ padding:5px 6px; border-radius:4px; }}"
             f"QListWidget::item:hover {{ background:{p.hover_surface}; }}"
             f"QListWidget::item:selected {{ background:{p.accent_soft}; color:{p.text}; }}"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineerdiff"
-version = "1.2.2"
+version = "1.2.3"
 description = "EngineerDiff — Windows 本地多格式文件差异比较工具"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -54,7 +54,7 @@ Paddle / ONNX Runtime**。
 
 ![关于 EngineerDiff：by jzh](docs/screenshots/about.png)
 
-改造前后对比（左侧 1.1.0，右侧 1.2.2）：
+改造前后对比（左侧 1.1.0，右侧 1.2.3）：
 
 ![UI 改造前后对比](docs/screenshots/ui-before-after.png)
 
@@ -67,7 +67,7 @@ Paddle / ONNX Runtime**。
 ## 安装与使用
 
 1. 从 [GitHub Releases](https://github.com/youyoudezhuzhu/engineerdiff/releases/latest) 下载并运行
-   `EngineerDiff-1.2.2-Setup-x64.exe`（或解压便携版 zip，保持 `_internal` 目录完整）；
+   `EngineerDiff-1.2.3-Setup-x64.exe`（或解压便携版 zip，保持 `_internal` 目录完整）；
 2. 选择或拖入左右文件；**拖入后自动比较**（图片先显示原图，再 OCR），截图可 Ctrl+V 粘贴；
 3. 用“上一处/下一处”或 F7/F8 查看差异；需要时点击“重新比较”；
    点击顶部 **“批量比较”** 标签可选择一个基准 + 多个候选文件，一次查看所有差异；
@@ -139,14 +139,14 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest -q
 1. 运行 **Windows Build & Release**（push `main` 或手动 `workflow_dispatch`）；
 2. 流程：依赖断言 → 全量 pytest（含 OCR）→ PyInstaller onedir → 打包后 `--self-test` →
    Inno Setup → **静默安装 → 安装后 `--self-test` → 静默卸载** → artifact；
-3. 推送 `v1.2.2` tag 自动发布 GitHub Release（安装包、便携 zip、SHA-256）。
+3. 推送 `v1.2.3` tag 自动发布 GitHub Release（安装包、便携 zip、SHA-256）。
 
 本地 Windows 构建（需要 Python 3.11、Inno Setup 6）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
-# 产物：release\EngineerDiff-1.2.2-Setup-x64.exe
-#       release\EngineerDiff-1.2.2-portable-win64.zip
+# 产物：release\EngineerDiff-1.2.3-Setup-x64.exe
+#       release\EngineerDiff-1.2.3-portable-win64.zip
 #       release\sha256sums.txt
 ```
 
