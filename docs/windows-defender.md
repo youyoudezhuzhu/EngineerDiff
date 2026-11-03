@@ -13,7 +13,7 @@ EngineerDiff 是**未签名的开源 Windows 工具**。软件本身不包含联
 从 GitHub Release 下载后，用 PowerShell 校验：
 
 ```powershell
-Get-FileHash .\EngineerDiff-1.2.3-Setup-x64.exe -Algorithm SHA256
+Get-FileHash .\EngineerDiff-1.2.4-Setup-x64.exe -Algorithm SHA256
 ```
 
 与 Release 页面或 `sha256sums.txt` 中的 SHA-256 对比；一致才继续。
@@ -50,7 +50,7 @@ Remove-MpPreference -ExclusionPath "$env:LOCALAPPDATA\Programs\EngineerDiff"
 
 ## 4. 使用便携版 / 重新下载
 
-- 若安装包被拦，可尝试 `EngineerDiff-1.2.3-portable-win64.zip`；
+- 若安装包被拦，可尝试 `EngineerDiff-1.2.4-portable-win64.zip`；
 - 删除隔离区中的旧文件后重新下载并校验 SHA-256，避免使用损坏/被改写的副本；
 - 企业环境可通过 Intune/组策略下发签名后的版本，或添加应用白名单。
 
@@ -64,7 +64,7 @@ $env:ENGINEERDIFF_SIGN_PASSWORD = "***"
 powershell -ExecutionPolicy Bypass -File scripts\sign_release.ps1
 ```
 
-脚本会签名 `dist\EngineerDiff\EngineerDiff.exe` 与 `release\EngineerDiff-1.2.3-Setup-x64.exe`
+脚本会签名 `dist\EngineerDiff\EngineerDiff.exe` 与 `release\EngineerDiff-1.2.4-Setup-x64.exe`
 并做时间戳；签名后重新计算 `sha256sums.txt` 并重新上传 Release。
 
 ## 6. 已知限制

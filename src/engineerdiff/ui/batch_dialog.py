@@ -349,7 +349,8 @@ class BatchCompareDialog(QDialog):
         ah.addWidget(self.btn_add)
         self.all_zone.paths_dropped.connect(self._add_paths)
         self.file_list = _FileList(self.all_zone)
-        self.file_list.setMaximumHeight(150)
+        self.file_list.setMinimumHeight(60)
+        # 不设置最大高度：拖动上下分隔条时，“全部”外框与内部文件列表一起变大/变小。
         self.file_list.paths_dropped.connect(self._add_paths)
         az.addLayout(ah)
         az.addWidget(self.file_list, 1)
@@ -419,7 +420,13 @@ class BatchCompareDialog(QDialog):
         self.progress.setRange(0, 100)
         self.progress.setVisible(False)
         rp.addWidget(self.progress)
-        splitter.addWidget(result_panel)
+        result_container = QWidget()
+        result_container_layout = QVBoxLayout(result_container)
+        # 左右缩进 10px，使结果卡片与上方“基准/全部”导入框左右边缘对齐。
+        result_container_layout.setContentsMargins(10, 0, 10, 0)
+        result_container_layout.setSpacing(0)
+        result_container_layout.addWidget(result_panel)
+        splitter.addWidget(result_container)
         splitter.setSizes([210, 520])
         root.addWidget(splitter, 1)
 
@@ -702,10 +709,10 @@ class BatchCompareDialog(QDialog):
         else:
             self.lbl_status.setText("完成")
         self.btn_copy.setEnabled(bool(result.rows))
-        # 导入完成后收缩文件区，把主要空间让给差异矩阵
-        self.file_list.setMaximumHeight(112)
+        # 导入完成后收缩文件区，把主要空间让给差异矩阵；但不锁死列表最大高度，
+        # 用户再拖动分隔条时外框和内部列表仍同步伸缩。
         try:
-            self._splitter.setSizes([142, 620])
+            self._splitter.setSizes([180, 620])
         except Exception:
             pass
         is_image = result.mode.value == "image" and any(c.result is not None for c in result.candidates)

@@ -8,8 +8,8 @@
 
     产物：
         dist\EngineerDiff\EngineerDiff.exe               PyInstaller one-dir
-        release\EngineerDiff-1.2.3-Setup-x64.exe         Inno Setup 安装包
-        release\EngineerDiff-1.2.3-portable-win64.zip    便携版 zip
+        release\EngineerDiff-1.2.4-Setup-x64.exe         Inno Setup 安装包
+        release\EngineerDiff-1.2.4-portable-win64.zip    便携版 zip
         release\sha256sums.txt                           以上文件的 SHA-256
         build\windows-build-summary.json                  构建信息（版本/大小/哈希）
 
