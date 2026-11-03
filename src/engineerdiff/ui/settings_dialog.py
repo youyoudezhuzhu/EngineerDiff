@@ -116,9 +116,11 @@ class SettingsDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText("确定")
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("取消")
         self.btn_defaults = buttons.addButton("恢复默认", QDialogButtonBox.ButtonRole.ResetRole)
+        self.btn_about = buttons.addButton("关于 EngineerDiff", QDialogButtonBox.ButtonRole.ActionRole)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         self.btn_defaults.clicked.connect(self._restore_defaults)
+        self.btn_about.clicked.connect(self._show_about)
         layout.addWidget(buttons)
         self._load(settings)
 
@@ -137,6 +139,11 @@ class SettingsDialog(QDialog):
         self.cb_show_boxes.setChecked(s.image.show_boxes)
         self.cb_sync_sheets.setChecked(s.sync_sheets)
         self.cb_sync_scroll.setChecked(s.sync_scroll)
+
+    def _show_about(self) -> None:
+        from .about_dialog import AboutDialog
+
+        AboutDialog(self).exec()
 
     def _restore_defaults(self) -> None:
         self._load(AppSettings())

@@ -243,6 +243,7 @@ QListWidget::item:hover {{ background:{p.hover_surface}; }}
 QListWidget::item:selected {{ background:{p.accent_soft}; color:{p.text}; }}
 QLabel#brandTitle {{ color:{p.text}; font-size:15pt; font-weight:600; }}
 QLabel#brandSubtitle {{ color:{p.text_secondary}; font-size:9.5pt; }}
+QLabel#brandAuthor {{ color:{p.text_secondary}; font-size:8.5pt; padding-left:2px; }}
 QLabel#pageTitle {{ color:{p.text}; font-size:18pt; font-weight:600; }}
 QLabel#sectionTitle {{ color:{p.text}; font-weight:600; }}
 QLabel#subtle {{ color:{p.text_secondary}; }}

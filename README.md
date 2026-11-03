@@ -2,6 +2,8 @@
 
 **Windows 本地多格式文件差异比较工具 · 工程现场核对专用**
 
+**by jzh**
+
 EngineerDiff 用于核对两版装置软件版本信息、保护定值表、参数配置文件、TXT/CSV 资料、
 Excel 工作簿和装置界面截图。它把差异**直接标在原始内容上**：文本标字符、Excel 标单元格与
 Sheet 标签、截图标在原文字位置，不需要阅读额外的差异报告。
@@ -28,9 +30,12 @@ Paddle / ONNX Runtime**。
 - 图片支持鼠标滚轮直接缩放、Shift+滚轮横向平移、拖动查看、Ctrl+V 粘贴截图；
 - Excel 多 Sheet、顺序无关配对、缺失 Sheet 占位、标签差异标红、同步 Sheet 开关、表格缩放；
 - OCR 校对：查看识别框与置信度、修改识别文本、手动建立左右文字对应后重新比较；
-- **批量比较页**：顶部导航直接切换，一个基准 + 多个候选，生成“任意文件不同即标红”的差异矩阵；
-  Excel 按 Sheet 分组并支持折叠，图片可打开“原图对照”查看基准与候选；
-- **OCR 加速**：首次拖入图片后台预识别、相同图片跳过 OCR、跨次 OCR 缓存、模型进程内共享；
+- **批量比较页**：顶部导航直接切换，一个基准 + 多个候选；可随时更换基准文件；
+  Excel 按 Sheet 分组并支持折叠，行内可显示/隐藏与基准一致的候选值；
+  图片可打开“原图对照”查看基准与候选，双击差异行定位原图文字框；
+- **OCR 加速**：小图自适应检测、识别批大小 16、一次文件读取、后台预识别、相同图片跳过
+  OCR、跨次缓存、模型进程内共享；基准与限制见 [OCR 性能报告](docs/ocr-performance.md)；
+- 开发者署名 **by jzh**，设置中的“关于 EngineerDiff”显示名称、版本与署名。
 - 纯离线，无登录、无云服务、无文件上传。
 
 ## 截图
@@ -47,6 +52,8 @@ Paddle / ONNX Runtime**。
 |---|---|
 | ![批量 Excel](docs/screenshots/batch-excel.png) | ![批量原图](docs/screenshots/batch-image-view.png) |
 
+![关于 EngineerDiff：by jzh](docs/screenshots/about.png)
+
 ## 系统要求
 
 - Windows 10 / 11 x64；默认按当前用户安装，无需管理员权限；
@@ -56,7 +63,7 @@ Paddle / ONNX Runtime**。
 ## 安装与使用
 
 1. 从 [GitHub Releases](https://github.com/youyoudezhuzhu/engineerdiff/releases/latest) 下载并运行
-   `EngineerDiff-1.1.0-Setup-x64.exe`（或解压便携版 zip，保持 `_internal` 目录完整）；
+   `EngineerDiff-1.2.0-Setup-x64.exe`（或解压便携版 zip，保持 `_internal` 目录完整）；
 2. 选择或拖入左右文件；**拖入后自动比较**（图片先显示原图，再 OCR），截图可 Ctrl+V 粘贴；
 3. 用“上一处/下一处”或 F7/F8 查看差异；需要时点击“重新比较”；
    点击顶部 **“批量比较”** 标签可选择一个基准 + 多个候选文件，一次查看所有差异；
@@ -128,14 +135,14 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest -q
 1. 运行 **Windows Build & Release**（push `main` 或手动 `workflow_dispatch`）；
 2. 流程：依赖断言 → 全量 pytest（含 OCR）→ PyInstaller onedir → 打包后 `--self-test` →
    Inno Setup → **静默安装 → 安装后 `--self-test` → 静默卸载** → artifact；
-3. 推送 `v1.1.0` tag 自动发布 GitHub Release（安装包、便携 zip、SHA-256）。
+3. 推送 `v1.2.0` tag 自动发布 GitHub Release（安装包、便携 zip、SHA-256）。
 
 本地 Windows 构建（需要 Python 3.11、Inno Setup 6）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
-# 产物：release\EngineerDiff-1.1.0-Setup-x64.exe
-#       release\EngineerDiff-1.1.0-portable-win64.zip
+# 产物：release\EngineerDiff-1.2.0-Setup-x64.exe
+#       release\EngineerDiff-1.2.0-portable-win64.zip
 #       release\sha256sums.txt
 ```
 

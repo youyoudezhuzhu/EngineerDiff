@@ -16,15 +16,15 @@
 ;   ..\docs\*.md                 交付文档
 ;   ..\LICENSE                   MIT 许可证
 ; 输出：
-;   ..\release\EngineerDiff-1.1.0-Setup-x64.exe
+;   ..\release\EngineerDiff-1.2.0-Setup-x64.exe
 ;
 ; 版本号约定：与 src/engineerdiff/version.py、pyproject.toml 保持一致。
 ; ---------------------------------------------------------------------------
 
 #define APP_NAME "EngineerDiff"
 #define APP_NAME_CN "EngineerDiff 工程文件差异比较"
-#define APP_VERSION "1.1.0"
-#define APP_PUBLISHER "EngineerDiff contributors"
+#define APP_VERSION "1.2.0"
+#define APP_PUBLISHER "jzh"
 #define APP_EXE "EngineerDiff.exe"
 #define APP_GUID "{{245CB9EB-4ABF-4388-BCAB-0DF568AED985}"
 #define SOURCE_DIR "..\dist\EngineerDiff"
@@ -37,7 +37,7 @@ AppName={#APP_NAME_CN}
 AppVersion={#APP_VERSION}
 AppVerName={#APP_NAME} {#APP_VERSION}
 AppPublisher={#APP_PUBLISHER}
-AppCopyright=Copyright (c) 2026 EngineerDiff contributors
+AppCopyright=Copyright (c) 2026 jzh
 VersionInfoVersion={#APP_VERSION}.0
 VersionInfoCompany={#APP_PUBLISHER}
 VersionInfoDescription={#APP_NAME_CN} 安装程序

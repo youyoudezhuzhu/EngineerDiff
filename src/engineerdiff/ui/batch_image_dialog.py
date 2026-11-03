@@ -23,15 +23,19 @@ from .image_view import ImagePane
 
 
 class BatchImageDialog(QDialog):
-    def __init__(self, result: BatchResult, parent=None) -> None:
+    def __init__(self, result: BatchResult, parent=None, candidate_index: int = 0,
+                 reveal_diff=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("EngineerDiff - 原图对照")
         self.resize(1320, 820)
         self.setMinimumSize(900, 600)
         self._result = result
+        self._reveal_diff = reveal_diff
         self._build_ui()
         self.apply_theme()
-        self._load_candidate(0)
+        idx = max(0, min(candidate_index, len(result.candidates) - 1))
+        self.combo.setCurrentIndex(idx)
+        self._load_candidate(idx)
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -102,6 +106,9 @@ class BatchImageDialog(QDialog):
         self.right_pane.set_comparison(image.right, image, "right")
         self.left_pane.setToolTip(f"基准：{Path(self._result.baseline).name}")
         self.right_pane.setToolTip(cand.path)
+        if self._reveal_diff is not None:
+            self.left_pane.reveal(self._reveal_diff)
+            self.right_pane.reveal(self._reveal_diff)
 
     def _fit(self) -> None:
         self.left_pane.fit_to_window()

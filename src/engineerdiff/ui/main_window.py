@@ -119,8 +119,12 @@ class MainWindow(QMainWindow):
         self.lbl_brand.setObjectName("brandTitle")
         self.lbl_subtitle = QLabel("工程文件差异比较")
         self.lbl_subtitle.setObjectName("brandSubtitle")
+        self.lbl_author = QLabel(f"by {version.AUTHOR}")
+        self.lbl_author.setObjectName("brandAuthor")
+        self.lbl_author.setToolTip(f"开发者：{version.AUTHOR}")
         hl.addWidget(self.lbl_brand)
         hl.addWidget(self.lbl_subtitle)
+        hl.addWidget(self.lbl_author)
         hl.addSpacing(14)
         self.nav = QTabBar()
         self.nav.setObjectName("modeNav")
@@ -298,6 +302,8 @@ class MainWindow(QMainWindow):
             self.batch_page = BatchCompareDialog(self, self._settings)
             self.batch_page.setWindowFlags(Qt.Widget)
             self.batch_page.btn_close.hide()
+            # 批量页复用主窗口导航，隐藏页内重复的“批量比较”大标题
+            self.batch_page.lbl_page_title.hide()
             self.batch_page.setMinimumSize(0, 0)
             self.pages.addWidget(self.batch_page)
         except Exception:
@@ -428,7 +434,8 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self.file_panel.setStyleSheet(
-            f"QFrame#filePanel {{ background:{p.card_bg}; border:1px solid {p.divider}; border-radius:10px; }}"
+            f"QFrame#filePanel {{ background:transparent; border:none;"
+            f"border-bottom:1px solid {p.divider}; border-radius:0; }}"
         )
         self.warning_bar.setStyleSheet(
             f"QFrame {{ background:{p.warning_bg}; border:1px solid {p.warning}; border-radius:6px; }}"
@@ -438,7 +445,12 @@ class MainWindow(QMainWindow):
         for label in (self.lbl_index, self.lbl_zoom, self.lbl_diff, self.lbl_state):
             label.setStyleSheet(label.styleSheet())
         self.lbl_state.setStyleSheet(f"color:{p.text_secondary};")
-        self.lbl_diff.setStyleSheet(f"font-weight:600;color:{p.text_secondary};")
+        if self.lbl_diff.text().startswith("差异"):
+            self.lbl_diff.setStyleSheet(
+                f"font-weight:600;color:{p.success if self.lbl_diff.text() == '差异 0 处' else p.diff_red};"
+            )
+        else:
+            self.lbl_diff.setStyleSheet(f"font-weight:600;color:{p.text_secondary};")
         self.lbl_zoom.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_index.setStyleSheet(f"font-weight:600;color:{p.text};")
         self.lbl_warn_count.setStyleSheet(f"color:{p.warning_text};")
@@ -803,7 +815,7 @@ class MainWindow(QMainWindow):
             return
         self._update_type_label()
         count = len(self._diffs)
-        self.lbl_diff.setText(f"差异 {count} 处")
+        self._set_diff_count(count)
         self.lbl_ocr.setText("")
         if result.mode == CompareMode.IMAGE:
             self.lbl_ocr.setText("OCR：RapidOCR（CPU，离线）")
@@ -892,7 +904,7 @@ class MainWindow(QMainWindow):
 
         def run() -> None:
             try:
-                svc.warmup()
+                svc.warmup(path)
                 svc.recognize(path)
             except Exception:
                 pass
@@ -1226,8 +1238,17 @@ class MainWindow(QMainWindow):
             self._diffs = self._result.diffs_for_view(self._view)
         self._idx = 0 if self._diffs else -1
         self._update_index_label()
-        count = len(self._diffs)
+        self._set_diff_count(len(self._diffs))
+
+    def _set_diff_count(self, count: int) -> None:
+        p = theme.palette()
         self.lbl_diff.setText(f"差异 {count} 处")
+        if count == 0:
+            self.lbl_diff.setStyleSheet(f"font-weight:600;color:{p.success};")
+            self.lbl_diff.setToolTip("两侧内容一致")
+        else:
+            self.lbl_diff.setStyleSheet(f"font-weight:600;color:{p.diff_red};")
+            self.lbl_diff.setToolTip(f"{count} 处差异")
 
     def _update_index_label(self) -> None:
         if self._diffs and 0 <= self._idx < len(self._diffs):

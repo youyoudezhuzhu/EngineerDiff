@@ -1,6 +1,6 @@
 # EngineerDiff 使用说明（Windows）
 
-EngineerDiff 是一个 **Windows 本地、完全离线** 的工程文件差异比较工具，用于快速找出两版
+EngineerDiff（**by jzh**）是一个 **Windows 本地、完全离线** 的工程文件差异比较工具，用于快速找出两版
 定值单/装置配置文件之间的差异。支持：
 
 - **文本**：`.txt`
@@ -28,7 +28,7 @@ EngineerDiff 是一个 **Windows 本地、完全离线** 的工程文件差异�
 
 ### 2.1 安装包安装（推荐）
 
-1. 运行 `EngineerDiff-1.1.0-Setup-x64.exe`。
+1. 运行 `EngineerDiff-1.2.0-Setup-x64.exe`。
 2. 按向导完成安装。默认 **仅为当前用户安装**，安装目录为：
 
    ```text
@@ -48,13 +48,13 @@ EngineerDiff 是一个 **Windows 本地、完全离线** 的工程文件差异�
 > [Windows Defender 误报处理](windows-defender.md)。校验方法（PowerShell）：
 >
 > ```powershell
-> Get-FileHash .\EngineerDiff-1.1.0-Setup-x64.exe -Algorithm SHA256
+> Get-FileHash .\EngineerDiff-1.2.0-Setup-x64.exe -Algorithm SHA256
 > ```
 
 **静默安装**（批处理/内网分发，Inno Setup 标准参数）：
 
 ```bat
-EngineerDiff-1.1.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+EngineerDiff-1.2.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 ```
 
 需要为所有用户安装时，可由管理员执行 `/ALLUSERS`（此模式会写入
@@ -77,7 +77,7 @@ EngineerDiff-1.1.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
 ### 2.3 便携版（免安装）
 
-将 `EngineerDiff-1.1.0-portable-win64.zip` 解压到任意可写目录后，直接运行
+将 `EngineerDiff-1.2.0-portable-win64.zip` 解压到任意可写目录后，直接运行
 `EngineerDiff.exe`。**必须保留解压后的完整目录结构**（`EngineerDiff.exe` 与
 `_internal\` 目录不可分开移动/删除，OCR 模型与 Qt 插件都在其中）。
 
@@ -131,7 +131,8 @@ EngineerDiff-1.1.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
 点击顶部 **“批量比较”** 标签：
 
-1. 第一个文件作为**基准 A**，其余文件依次与基准比较；
+1. 文件列表上方的“基准”下拉框选择基准文件（默认第一个），其余文件依次与基准比较；
+   比较完成后可直接更换基准并重新比较，OCR 结果会命中缓存；
 2. 支持通过“添加文件…”或直接拖入窗口添加文件，支持一次选择多个；
 3. 点击“开始批量比较”，生成差异矩阵：行为差异位置，列为基准和每个候选文件；
 4. **只要是任意一个候选文件在该位置与基准不同，整行/对应单元格标红**（或关系），
@@ -139,7 +140,8 @@ EngineerDiff-1.1.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 5. 可“复制差异表”到剪贴板（TSV）。批量比较要求所有文件类型一致（TXT/CSV/XLS/XLSX/
    图片不能混合）；基准是按列表第一个文件，可通过移除/重新添加调整；
 6. Excel 结果按工作表分组，点击组标题可折叠/展开；图片结果可点“原图对照”，
-   选择候选文件查看基准/候选原图，滚轮缩放、拖动平移并支持同步缩放。
+   选择候选文件查看基准/候选原图，滚轮缩放、拖动平移并支持同步缩放；双击差异行可定位原图。
+7. “显示一致项”可切换候选列中与基准相同的值；默认显示，取消后只保留差异值。
 
 ![批量比较差异表](screenshots/batch-compare.png)
 
@@ -250,6 +252,11 @@ EngineerDiff-1.1.0-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 ---
 
 ## 8. 设置
+
+设置 → 外观可切换主题；设置底部 **“关于 EngineerDiff”** 显示版本、开发者署名 **by jzh** 和
+第三方许可证说明。主窗口顶部也以小字号显示 **by jzh**。
+
+![关于](screenshots/about.png)
 
 点击顶部 **“设置”**，更改后点击“确定”保存；设置在下一次比较（或点击“重新比较”）时生效。
 设置按当前 Windows 用户保存在注册表 `HKEY_CURRENT_USER\Software\EngineerDiff\EngineerDiff`。

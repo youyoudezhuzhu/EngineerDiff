@@ -8,8 +8,8 @@
 
     产物：
         dist\EngineerDiff\EngineerDiff.exe               PyInstaller one-dir
-        release\EngineerDiff-1.1.0-Setup-x64.exe         Inno Setup 安装包
-        release\EngineerDiff-1.1.0-portable-win64.zip    便携版 zip
+        release\EngineerDiff-1.2.0-Setup-x64.exe         Inno Setup 安装包
+        release\EngineerDiff-1.2.0-portable-win64.zip    便携版 zip
         release\sha256sums.txt                           以上文件的 SHA-256
         build\windows-build-summary.json                  构建信息（版本/大小/哈希）
 
@@ -151,7 +151,7 @@ try {
     Invoke-Native $Python @((Join-Path $root 'scripts\collect_licenses.py'), '--dist', $distDir, '--strict')
     $docsDir = Join-Path $distDir 'docs'
     New-Item -ItemType Directory -Path $docsDir -Force | Out-Null
-    foreach ($doc in @('user-guide.md', 'known-limitations.md', 'third-party-licenses.md', 'technical-selection.md', 'windows-defender.md', 'code-signing.md', 'architecture.md')) {
+    foreach ($doc in @('user-guide.md', 'known-limitations.md', 'third-party-licenses.md', 'technical-selection.md', 'windows-defender.md', 'code-signing.md', 'ocr-performance.md', 'architecture.md')) {
         $src = Join-Path $root "docs\$doc"
         if (Test-Path -LiteralPath $src) {
             Copy-Item -LiteralPath $src -Destination (Join-Path $docsDir $doc) -Force

@@ -85,3 +85,23 @@ def test_batch_excel_matrix_groups_by_sheet(qapp, tmp_path: Path):
 
 def test_settings_theme_default_is_system():
     assert AppSettings().theme == "system"
+
+
+@pytest.mark.gui
+def test_about_dialog_shows_author_and_version(qapp):
+    from engineerdiff import version
+    from engineerdiff.ui.about_dialog import AboutDialog
+
+    theme.apply_theme("light", qapp)
+    dlg = AboutDialog()
+    texts = [w.text() for w in dlg.findChildren(type(dlg.lbl_name))]
+    assert version.APP_NAME in texts
+    assert "by jzh" in texts
+    assert version.__version__ in " ".join(texts)
+    dlg.close()
+
+
+def test_author_metadata():
+    from engineerdiff import version
+
+    assert version.AUTHOR == "jzh"

@@ -1,0 +1,73 @@
+{
+  "label": "after-final",
+  "version": "1.2.0",
+  "cpu_count": 4,
+  "created": "2026-11-03T16:08:10+0800",
+  "cases": [
+    {
+      "case": "1080p_single",
+      "files": 1,
+      "model_load_s": 1.139,
+      "first_s": 8.591,
+      "total_s": 8.591,
+      "mean_s": 8.591,
+      "p95_s": 8.591,
+      "text_boxes": 13,
+      "rss_mb": 375.0,
+      "cache_entries": 1,
+      "cached_pages": 0
+    },
+    {
+      "case": "4k_single",
+      "files": 1,
+      "model_load_s": 0.0,
+      "first_s": 8.772,
+      "total_s": 8.772,
+      "mean_s": 8.772,
+      "p95_s": 8.772,
+      "text_boxes": 13,
+      "rss_mb": 419.6,
+      "cache_entries": 1,
+      "cached_pages": 0
+    },
+    {
+      "case": "distinct_10",
+      "files": 10,
+      "model_load_s": 0.0,
+      "first_s": 4.956,
+      "total_s": 40.601,
+      "mean_s": 4.06,
+      "p95_s": 4.956,
+      "text_boxes": 130,
+      "rss_mb": 421.0,
+      "cache_entries": 10,
+      "cached_pages": 0
+    },
+    {
+      "case": "duplicates_10",
+      "files": 10,
+      "model_load_s": 0.0,
+      "first_s": 3.904,
+      "total_s": 3.932,
+      "mean_s": 0.393,
+      "p95_s": 0.009,
+      "text_boxes": 130,
+      "rss_mb": 421.0,
+      "cache_entries": 1,
+      "cached_pages": 9
+    },
+    {
+      "case": "dense_small",
+      "files": 1,
+      "model_load_s": 0.0,
+      "first_s": 20.164,
+      "total_s": 20.164,
+      "mean_s": 20.164,
+      "p95_s": 20.164,
+      "text_boxes": 40,
+      "rss_mb": 582.6,
+      "cache_entries": 1,
+      "cached_pages": 0
+    }
+  ]
+}

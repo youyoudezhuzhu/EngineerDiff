@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineerdiff"
-version = "1.1.0"
+version = "1.2.0"
 description = "EngineerDiff — Windows 本地多格式文件差异比较工具"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "EngineerDiff contributors" }]
+authors = [{ name = "jzh" }]
 keywords = ["diff", "excel", "ocr", "windows", "desktop", "engineering"]
 classifiers = [
   "Development Status :: 4 - Beta",

@@ -12,6 +12,8 @@ from PySide6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
+    QCheckBox,
+    QComboBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -29,7 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..batch import BatchError, BatchResult, run_batch
+from ..batch import BatchCandidate, BatchError, BatchResult, run_batch
 from ..file_loader import SUPPORTED_DIALOG_FILTER, classify
 from ..models import AppSettings, CompareMode, Severity
 from ..ocr.engine import OcrService
@@ -72,6 +74,7 @@ class _FileList(QListWidget):
 
 class BatchWorker(QThread):
     progress = Signal(int, str)
+    candidate_done = Signal(object)
     succeeded = Signal(object)
     failed = Signal(str)
     cancelled = Signal()
@@ -97,6 +100,7 @@ class BatchWorker(QThread):
                 progress=lambda p, m: self.progress.emit(p, m),
                 cancel=self._cancel.is_set,
                 ocr_service=self._ocr,
+                on_candidate=lambda _i, cand: self.candidate_done.emit(cand),
             )
             if self._cancel.is_set():
                 self.cancelled.emit()
@@ -138,7 +142,7 @@ class BatchCompareDialog(QDialog):
         self.lbl_page_title.setObjectName("pageTitle")
         root.addWidget(self.lbl_page_title)
         hint = QLabel(
-            "第一个文件作为基准 A；其余文件依次与基准比较。"
+            "默认第一个文件为基准，可在下方下拉框更换；其余文件依次与基准比较。"
             "同一位置只要有任意一个文件不同，整行标红（或关系）。"
         )
         hint.setWordWrap(True)
@@ -156,8 +160,12 @@ class BatchCompareDialog(QDialog):
         fp.setContentsMargins(10, 8, 10, 8)
         fp.setSpacing(6)
         fph = QHBoxLayout()
-        self.lbl_baseline = QLabel("基准：未选择")
-        fph.addWidget(self.lbl_baseline, 1)
+        self.lbl_baseline = QLabel("基准：")
+        fph.addWidget(self.lbl_baseline)
+        self.combo_baseline = QComboBox()
+        self.combo_baseline.setMinimumWidth(220)
+        self.combo_baseline.setToolTip("选择基准文件；更换后点击“开始批量比较/重新比较”")
+        fph.addWidget(self.combo_baseline, 1)
         self.lbl_count = QLabel("共 0 个文件")
         fph.addWidget(self.lbl_count)
         fp.addLayout(fph)
@@ -197,6 +205,11 @@ class BatchCompareDialog(QDialog):
         result_head = QHBoxLayout()
         self.lbl_summary = QLabel("尚未开始比较")
         result_head.addWidget(self.lbl_summary, 1)
+        self.cb_same = QCheckBox("显示一致项")
+        self.cb_same.setChecked(True)
+        self.cb_same.setToolTip("取消勾选后，与基准一致的候选值留空，只突出差异单元格")
+        self.cb_same.toggled.connect(self._on_same_toggled)
+        result_head.addWidget(self.cb_same)
         legend = QLabel("红 = 确定差异 · 橙 = 需人工复核")
         result_head.addWidget(legend)
         self.btn_copy = QPushButton("复制差异表")
@@ -213,6 +226,7 @@ class BatchCompareDialog(QDialog):
 
         self.table = QTableWidget(0, 2)
         self._groups: list[tuple[int, list[int], str]] = []
+        self._row_models: dict[int, object] = {}
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(False)
@@ -251,6 +265,7 @@ class BatchCompareDialog(QDialog):
         self.btn_copy.clicked.connect(self._copy_table)
         self.btn_close.clicked.connect(self.reject)
         self.table.cellClicked.connect(self._toggle_group)
+        self.table.cellDoubleClicked.connect(self._on_row_double_clicked)
         self.file_list.model().rowsInserted.connect(self._refresh_file_count)
         self.file_list.model().rowsRemoved.connect(self._refresh_file_count)
         self._refresh_file_count()
@@ -272,6 +287,7 @@ class BatchCompareDialog(QDialog):
         self.lbl_hint.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_count.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_baseline.setStyleSheet(f"font-weight:600;color:{p.text};")
+        self.combo_baseline.setStyleSheet("")
         self.lbl_summary.setStyleSheet(f"font-weight:600;color:{p.text};")
         self.lbl_status.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_result_empty.setStyleSheet(f"color:{p.text_secondary};")
@@ -291,8 +307,8 @@ class BatchCompareDialog(QDialog):
         for frame in self.findChildren(QFrame):
             if frame.objectName() == "filePanel":
                 frame.setStyleSheet(
-                    f"QFrame#filePanel {{ background:{p.card_bg}; border:1px solid {p.divider};"
-                    "border-radius:8px; }"
+                    f"QFrame#filePanel {{ background:transparent; border:none;"
+                    f"border-bottom:1px solid {p.divider}; border-radius:0; }}"
                 )
             elif frame.objectName() == "batchResultPanel":
                 frame.setStyleSheet(
@@ -320,6 +336,7 @@ class BatchCompareDialog(QDialog):
             label = f"{info.name}    {info.type_label} · {info.human_size}"
             item.setText(label)
             item.setData(Qt.ItemDataRole.UserRole, info.path)
+            item.setData(Qt.ItemDataRole.UserRole + 1, label)
             item.setToolTip(info.path)
             self.file_list.addItem(item)
             existing.add(info.path)
@@ -345,9 +362,18 @@ class BatchCompareDialog(QDialog):
     def _refresh_file_count(self, *_args) -> None:
         paths = self._paths()
         self.lbl_count.setText(f"共 {len(paths)} 个文件")
-        self.lbl_baseline.setText(
-            f"基准：{Path(paths[0]).name}" if paths else "基准：未选择（列表第一个文件为基准）"
-        )
+        current = self.combo_baseline.currentData()
+        self.combo_baseline.blockSignals(True)
+        self.combo_baseline.clear()
+        for path in paths:
+            self.combo_baseline.addItem(Path(path).name, path)
+        if paths:
+            idx = self.combo_baseline.findData(current)
+            self.combo_baseline.setCurrentIndex(idx if idx >= 0 else 0)
+            self.combo_baseline.setEnabled(True)
+        else:
+            self.combo_baseline.setEnabled(False)
+        self.combo_baseline.blockSignals(False)
 
     # ------------------------------------------------------------------ run
     def _start(self) -> None:
@@ -357,6 +383,15 @@ class BatchCompareDialog(QDialog):
             return
         if self._worker is not None and self._worker.isRunning():
             return
+        baseline = self.combo_baseline.currentData() or paths[0]
+        candidates = [p for p in paths if p != baseline]
+        if not candidates:
+            QMessageBox.information(self, "批量比较", "请至少保留一个待比较文件。")
+            return
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            base_label = item.data(Qt.ItemDataRole.UserRole + 1) or item.text()
+            item.setText(base_label)
         self.table.clearContents()
         self.table.setRowCount(0)
         self.table.setVisible(False)
@@ -372,11 +407,12 @@ class BatchCompareDialog(QDialog):
         except Exception:
             ocr = None
         self._ocr = ocr
-        self._worker = BatchWorker(paths[0], paths[1:], self._settings, ocr, self)
+        self._worker = BatchWorker(baseline, candidates, self._settings, ocr, self)
         self._worker.progress.connect(self._on_progress)
         self._worker.succeeded.connect(self._on_succeeded)
         self._worker.failed.connect(self._on_failed)
         self._worker.cancelled.connect(self._on_cancelled)
+        self._worker.candidate_done.connect(self._on_candidate_done)
         self._worker.finished.connect(self._on_finished)
         self._worker.start()
 
@@ -389,6 +425,20 @@ class BatchCompareDialog(QDialog):
     def _on_progress(self, percent: int, message: str) -> None:
         self.progress.setValue(max(0, min(100, percent)))
         self.lbl_status.setText(message)
+
+    def _on_candidate_done(self, cand: BatchCandidate) -> None:
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            if item.data(Qt.ItemDataRole.UserRole) != cand.path:
+                continue
+            base_label = item.data(Qt.ItemDataRole.UserRole + 1) or cand.name
+            if cand.error:
+                item.setText(f"{base_label}    ✗ 失败")
+                item.setToolTip(f"{cand.path}\n{cand.error}")
+            else:
+                item.setText(f"{base_label}    ✓ {cand.diff_count} 处差异")
+                item.setToolTip(cand.path)
+            break
 
     def _on_succeeded(self, result: BatchResult) -> None:
         self._result = result
@@ -438,6 +488,7 @@ class BatchCompareDialog(QDialog):
         self.btn_remove.setEnabled(not running)
         self.btn_clear.setEnabled(not running)
         self.file_list.setEnabled(not running)
+        self.combo_baseline.setEnabled(not running and self.file_list.count() > 0)
         self.btn_cancel.setVisible(running)
         self.btn_cancel.setEnabled(running)
 
@@ -480,6 +531,7 @@ class BatchCompareDialog(QDialog):
 
         self.table.setRowCount(len(specs))
         self._groups = []
+        self._row_models = {}
         p = theme.palette()
         group_bg = QColor(p.secondary_surface)
         strong = QColor(p.diff_red_bg)
@@ -503,6 +555,7 @@ class BatchCompareDialog(QDialog):
                 self._groups.append((r, list(range(r + 1, r + 1 + count)), sheet, count))
                 continue
             row = payload
+            self._row_models[r] = row
             uncertain = row.severity == Severity.UNCERTAIN
             cell_bg = warning if uncertain else strong
             row_bg = soft_warn if uncertain else soft_red
@@ -521,9 +574,32 @@ class BatchCompareDialog(QDialog):
                 if row.differs[c]:
                     it.setBackground(cell_bg)
                     it.setForeground(QBrush(QColor(p.diff_red_text if not uncertain else p.warning_text)))
+                elif not self.cb_same.isChecked():
+                    it.setText("")
+                    it.setToolTip("与基准一致（已隐藏）")
                 self.table.setItem(r, 2 + c, it)
             self.table.setRowHeight(r, 26)
         self._size_columns()
+
+    def _on_same_toggled(self, _checked: bool) -> None:
+        if self._result is not None:
+            self._populate(self._result)
+
+    def _on_row_double_clicked(self, row: int, _column: int) -> None:
+        if self._result is None or self._result.mode.value != "image":
+            return
+        model = self._row_models.get(row)
+        if model is None or model.image_diff is None:
+            return
+        try:
+            from .batch_image_dialog import BatchImageDialog
+
+            dlg = BatchImageDialog(
+                self._result, self, max(0, model.image_candidate), model.image_diff
+            )
+            dlg.exec()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "原图对照", f"无法定位原图：{exc}")
 
     def _toggle_group(self, row: int, _column: int = 0) -> None:
         for group_row, children, sheet, count in self._groups:

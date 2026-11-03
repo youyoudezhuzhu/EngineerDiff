@@ -54,6 +54,8 @@ class BatchRow:
     note: str = ""
     sort_key: tuple = ()
     sheet: str = ""
+    image_diff: DiffItem | None = None
+    image_candidate: int = -1
 
 
 @dataclass
@@ -234,6 +236,9 @@ def build_batch_result(
                     row.baseline = _left_value(diff)
             if not row.sheet and sheet_name:
                 row.sheet = sheet_name
+            if row.image_diff is None and diff.group == "image":
+                row.image_diff = diff
+                row.image_candidate = index
             row.values[index] = _right_value(diff)
             row.differs[index] = True
             if diff.is_uncertain:
@@ -270,6 +275,7 @@ def run_batch(
     progress: Progress | None = None,
     cancel: Callable[[], bool] | None = None,
     ocr_service=None,
+    on_candidate: Callable[[int, "BatchCandidate"], None] | None = None,
 ) -> BatchResult:
     """批量比较入口。candidates 不含基准；返回按位置合并的或语义差异表。"""
     if not candidates:
@@ -325,11 +331,18 @@ def run_batch(
                 ocr_service=ocr_service,
             )
             diff_items = _diff_items(result)
-            results.append(BatchCandidate(path, result, "", len(diff_items)))
+            candidate = BatchCandidate(path, result, "", len(diff_items))
+            results.append(candidate)
         except ComparisonCancelled:
             raise
         except Exception as exc:  # noqa: BLE001 - 单个候选失败不应中断整批
-            results.append(BatchCandidate(path, None, f"{type(exc).__name__}: {exc}", 0))
+            candidate = BatchCandidate(path, None, f"{type(exc).__name__}: {exc}", 0)
+            results.append(candidate)
+        if on_candidate is not None:
+            try:
+                on_candidate(len(results) - 1, candidate)
+            except Exception:
+                pass
 
     batch = build_batch_result(baseline, results, mode)
     extra_warnings: list[str] = []

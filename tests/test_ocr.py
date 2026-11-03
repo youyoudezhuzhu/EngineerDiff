@@ -453,3 +453,11 @@ def test_compare_images_empty_pages_are_not_equal(tmp_path: Path):
     comparison = compare_images(left_page.path, right_page.path, ImageOptions(), _Fake())
     assert comparison.diffs == []
     assert any("未识别到文字" in warning for warning in comparison.warnings)
+
+
+def test_ocr_profile_selection_uses_native_small_images():
+    from engineerdiff.ocr.engine import OcrService
+
+    assert OcrService._profile_for_size(416, 256) == "small"
+    assert OcrService._profile_for_size(1920, 1080) == "large"
+    assert OcrService._profile_for_size(3840, 2160) == "large"
