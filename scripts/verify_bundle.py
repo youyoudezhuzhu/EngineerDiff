@@ -171,6 +171,7 @@ def check_docs(c: Checker, dist: Path) -> None:
         "docs/screenshots/batch-excel.png",
         "docs/screenshots/batch-image-view.png",
         "docs/screenshots/about.png",
+        "docs/screenshots/engineerdiff-icon.png",
     ):
         path = dist / rel
         c.check(f"交付文件 {rel}", path.is_file() and path.stat().st_size > 0, "存在" if path.is_file() else "缺失")

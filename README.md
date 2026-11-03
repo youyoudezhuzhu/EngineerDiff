@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshots/engineerdiff-icon.png" width="112" alt="EngineerDiff">
+</p>
+
 # EngineerDiff
 
 **Windows 本地多格式文件差异比较工具**
@@ -37,8 +41,8 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 
 从 [GitHub Releases](https://github.com/youyoudezhuzhu/EngineerDiff/releases/latest) 下载：
 
-- `EngineerDiff-1.2.4-Setup-x64.exe`：Windows 10/11 x64 安装包；
-- `EngineerDiff-1.2.4-portable-win64.zip`：便携版，解压后保持 `_internal` 目录完整。
+- `EngineerDiff-1.2.5-Setup-x64.exe`：Windows 10/11 x64 安装包；
+- `EngineerDiff-1.2.5-portable-win64.zip`：便携版，解压后保持 `_internal` 目录完整。
 
 使用步骤：
 

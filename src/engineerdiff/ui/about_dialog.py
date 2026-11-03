@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from .. import version
 from . import theme
@@ -19,9 +22,16 @@ class AboutDialog(QDialog):
         root.setContentsMargins(26, 24, 26, 18)
         root.setSpacing(8)
 
-        icon = QLabel("ED")
+        icon_path = Path(__file__).resolve().parents[1] / "resources" / "engineerdiff.png"
+        icon = QLabel()
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        icon.setFixedSize(56, 56)
+        icon.setFixedSize(72, 72)
+        pixmap = QPixmap(str(icon_path))
+        if not pixmap.isNull():
+            icon.setPixmap(
+                pixmap.scaled(72, 72, Qt.AspectRatioMode.KeepAspectRatio,
+                              Qt.TransformationMode.SmoothTransformation)
+            )
         root.addWidget(icon, 0, Qt.AlignmentFlag.AlignHCenter)
         root.addSpacing(6)
 
@@ -31,9 +41,20 @@ class AboutDialog(QDialog):
         self.lbl_desc = QLabel("工程文件差异比较工具")
         self.lbl_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self.lbl_desc)
+        author_row = QHBoxLayout()
+        author_row.setSpacing(10)
+        author_row.addStretch(1)
         self.lbl_author = QLabel(f"by {version.AUTHOR}")
         self.lbl_author.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        root.addWidget(self.lbl_author)
+        author_row.addWidget(self.lbl_author)
+        self.lbl_github = QLabel()
+        self.lbl_github.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_github.setOpenExternalLinks(True)
+        self.lbl_github.setTextInteractionFlags(Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.lbl_github.setToolTip("打开 GitHub 项目主页")
+        author_row.addWidget(self.lbl_github)
+        author_row.addStretch(1)
+        root.addLayout(author_row)
         self.lbl_version = QLabel(f"版本 {version.__version__}")
         self.lbl_version.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self.lbl_version)
@@ -57,12 +78,10 @@ class AboutDialog(QDialog):
         self.lbl_name.setStyleSheet(f"font-size:22pt;font-weight:600;color:{p.text};")
         self.lbl_desc.setStyleSheet(f"font-size:10.5pt;color:{p.text_secondary};")
         self.lbl_author.setStyleSheet(f"font-size:11pt;font-weight:600;color:{p.accent};")
+        self.lbl_github.setText(
+            f'<a href="https://github.com/youyoudezhuzhu/EngineerDiff" '
+            f'style="color:{p.accent}; text-decoration:none;">GitHub</a>'
+        )
+        self.lbl_github.setStyleSheet("font-size:10pt;")
         self.lbl_version.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_note.setStyleSheet(f"color:{p.text_secondary};font-size:9pt;line-height:1.4;")
-        # 图标方块使用强调色，与主窗口品牌一致
-        for child in self.findChildren(QLabel):
-            if child.text() == "ED":
-                child.setStyleSheet(
-                    f"background:{p.accent};color:white;border-radius:12px;"
-                    "font-size:19pt;font-weight:700;"
-                )
