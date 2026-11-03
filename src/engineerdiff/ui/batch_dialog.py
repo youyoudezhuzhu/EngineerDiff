@@ -271,8 +271,8 @@ class BatchCompareDialog(QDialog):
         self.lbl_page_title.setObjectName("pageTitle")
         root.addWidget(self.lbl_page_title)
         hint = QLabel(
-            "默认第一个文件为基准；可在下方下拉框更换，或把文件直接拖到基准框。"
-            "其余文件依次与基准比较。"
+            "默认第一个文件为基准；可把文件拖到“基准”框、点击右侧选择，"
+            "或在全部文件中双击/选中后点“设为基准”。其余文件依次与基准比较。"
             "同一位置只要有任意一个文件不同，整行标红（或关系）。"
         )
         hint.setWordWrap(True)
@@ -289,50 +289,74 @@ class BatchCompareDialog(QDialog):
         fp = QVBoxLayout(file_panel)
         fp.setContentsMargins(10, 8, 10, 8)
         fp.setSpacing(6)
+        # 基准框与全部文件框使用同一种 ImportBox 视觉；只有高度不同。
         self.baseline_zone = _BaselineDropZone()
-        self.baseline_zone.setMinimumHeight(42)
-        fph = QHBoxLayout(self.baseline_zone)
-        fph.setContentsMargins(8, 5, 8, 5)
+        self.baseline_zone.setObjectName("importBox")
+        self.baseline_zone.setMinimumHeight(74)
+        bz = QVBoxLayout(self.baseline_zone)
+        bz.setContentsMargins(10, 7, 10, 6)
+        bz.setSpacing(4)
+        fph = QHBoxLayout()
         fph.setSpacing(6)
         self.lbl_baseline = QLabel("基准：")
-        fph.addWidget(self.lbl_baseline)
-        self.combo_baseline = _BaselineCombo()
-        self.combo_baseline.setMinimumWidth(220)
-        self.combo_baseline.paths_dropped.connect(self._set_baseline_from_paths)
-        fph.addWidget(self.combo_baseline, 1)
-        self.btn_pick_baseline = QPushButton("选择…")
+        fph.addWidget(self.lbl_baseline, 1)
+        self.btn_pick_baseline = QPushButton("选择")
         self.btn_pick_baseline.setObjectName("tool")
-        self.btn_pick_baseline.setToolTip("手动选择基准文件；也可以直接把文件拖到这一行")
+        self.btn_pick_baseline.setToolTip("手动选择基准文件；也可以把文件直接拖到这一框")
         fph.addWidget(self.btn_pick_baseline)
-        self.lbl_baseline_hint = QLabel("可拖入文件")
-        fph.addWidget(self.lbl_baseline_hint)
         self.baseline_zone.paths_dropped.connect(self._set_baseline_from_paths)
+        # 隐藏的 combo 只用于维护当前基准路径；界面上显示为单行文件框。
+        self.combo_baseline = _BaselineCombo(self.baseline_zone)
+        self.combo_baseline.setVisible(False)
+        self.combo_baseline.setMinimumWidth(220)
+        self.baseline_list = _FileList(self.baseline_zone)
+        self.baseline_list.setMaximumHeight(46)
+        self.baseline_list.setMinimumHeight(38)
+        self.baseline_list.setToolTip("拖动文件到基准框可设为基准；也可点击右侧“选择”")
+        self.baseline_list.paths_dropped.connect(self._set_baseline_from_paths)
+        bz.addLayout(fph)
+        bz.addWidget(self.baseline_list, 1)
         self.baseline_zone.install_drop_proxy()
         fp.addWidget(self.baseline_zone)
 
-        all_head = QHBoxLayout()
+        # 全部文件框
+        self.all_zone = _BaselineDropZone()
+        self.all_zone.setObjectName("importBox")
+        self.all_zone.setMinimumHeight(150)
+        az = QVBoxLayout(self.all_zone)
+        az.setContentsMargins(10, 7, 10, 6)
+        az.setSpacing(4)
+        ah = QHBoxLayout()
+        ah.setSpacing(6)
         self.lbl_all = QLabel("全部：")
-        all_head.addWidget(self.lbl_all)
-        all_head.addStretch(1)
+        ah.addWidget(self.lbl_all)
+        ah.addStretch(1)
         self.lbl_count = QLabel("共 0 个文件")
-        all_head.addWidget(self.lbl_count)
-        fp.addLayout(all_head)
-
-        self.file_list = _FileList()
+        ah.addWidget(self.lbl_count)
+        self.btn_add = QPushButton("选择")
+        self.btn_add.setObjectName("tool")
+        self.btn_add.setToolTip("手动选择一个或多个文件加入全部文件")
+        ah.addWidget(self.btn_add)
+        self.all_zone.paths_dropped.connect(self._add_paths)
+        self.file_list = _FileList(self.all_zone)
         self.file_list.setMaximumHeight(150)
         self.file_list.paths_dropped.connect(self._add_paths)
-        fp.addWidget(self.file_list, 1)
+        az.addLayout(ah)
+        az.addWidget(self.file_list, 1)
+        self.all_zone.install_drop_proxy()
+        fp.addWidget(self.all_zone, 1)
 
         btn_row = QHBoxLayout()
-        self.btn_add = QPushButton("选择文件…")
-        self.btn_add.setObjectName("tool")
         self.btn_remove = QPushButton("移除选中")
         self.btn_remove.setObjectName("tool")
         self.btn_clear = QPushButton("清空")
         self.btn_clear.setObjectName("tool")
-        btn_row.addWidget(self.btn_add)
+        self.btn_set_baseline = QPushButton("设为基准")
+        self.btn_set_baseline.setObjectName("tool")
+        self.btn_set_baseline.setToolTip("把全部文件中选中的文件设为基准")
         btn_row.addWidget(self.btn_remove)
         btn_row.addWidget(self.btn_clear)
+        btn_row.addWidget(self.btn_set_baseline)
         btn_row.addStretch(1)
         self.btn_start = QPushButton("开始批量比较")
         self.btn_start.setObjectName("primary")
@@ -407,6 +431,8 @@ class BatchCompareDialog(QDialog):
 
         self.btn_add.clicked.connect(self._choose_files)
         self.btn_pick_baseline.clicked.connect(self._choose_baseline)
+        self.btn_set_baseline.clicked.connect(self._set_baseline_from_selection)
+        self.file_list.itemDoubleClicked.connect(self._set_baseline_from_item)
         self.btn_remove.clicked.connect(self._remove_selected)
         self.btn_clear.clicked.connect(self.file_list.clear)
         self.btn_start.clicked.connect(self._start)
@@ -441,24 +467,27 @@ class BatchCompareDialog(QDialog):
         self.lbl_status.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_result_empty.setStyleSheet(f"color:{p.text_secondary};")
         self.lbl_all.setStyleSheet(f"font-weight:600;color:{p.text};")
-        self.lbl_baseline_hint.setStyleSheet(f"color:{p.text_secondary};font-size:9pt;")
-        self.baseline_zone.setStyleSheet(
-            f"QFrame#baselineZone {{ background:{p.secondary_surface};"
-            f"border:1px dashed {p.border_strong}; border-radius:6px; }}"
+        box_style = (
+            f"QFrame#importBox {{ background:{p.secondary_surface};"
+            f"border:1px solid {p.divider}; border-radius:6px; }}"
         )
+        self.baseline_zone.setStyleSheet(box_style)
+        self.all_zone.setStyleSheet(box_style)
         self.table.setStyleSheet(
             f"QTableWidget {{ background:{p.card_bg}; border:1px solid {p.divider};"
             f"gridline-color:{p.divider}; color:{p.text}; }}"
             f"QTableWidget::item {{ padding:4px 6px; }}"
             f"QTableWidget::item:selected {{ background:{p.accent_soft}; color:{p.text}; }}"
         )
-        self.file_list.setStyleSheet(
+        list_style = (
             f"QListWidget {{ background:{p.card_bg}; border:1px solid {p.divider};"
-            f"border-radius:6px;padding:4px;color:{p.text}; }}"
+            f"border-radius:4px;padding:4px;color:{p.text}; }}"
             f"QListWidget::item {{ padding:5px 6px; border-radius:4px; }}"
             f"QListWidget::item:hover {{ background:{p.hover_surface}; }}"
             f"QListWidget::item:selected {{ background:{p.accent_soft}; color:{p.text}; }}"
         )
+        self.file_list.setStyleSheet(list_style)
+        self.baseline_list.setStyleSheet(list_style)
         for frame in self.findChildren(QFrame):
             if frame.objectName() == "filePanel":
                 frame.setStyleSheet(
@@ -516,7 +545,22 @@ class BatchCompareDialog(QDialog):
                     break
             except Exception:
                 continue
+        self._refresh_file_count()
         self.lbl_status.setText("基准已切换；点击“重新比较”生成新的差异矩阵。")
+
+    def _set_baseline_from_selection(self) -> None:
+        items = self.file_list.selectedItems()
+        if not items:
+            self.lbl_status.setText("请先在全部文件列表中选择一个文件。")
+            return
+        path = items[0].data(Qt.ItemDataRole.UserRole)
+        if path:
+            self._set_baseline_from_paths([path])
+
+    def _set_baseline_from_item(self, item: QListWidgetItem) -> None:
+        path = item.data(Qt.ItemDataRole.UserRole)
+        if path:
+            self._set_baseline_from_paths([path])
 
     def _choose_baseline(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -558,6 +602,25 @@ class BatchCompareDialog(QDialog):
         else:
             self.combo_baseline.setEnabled(False)
         self.combo_baseline.blockSignals(False)
+        baseline = self.combo_baseline.currentData() or (paths[0] if paths else "")
+        self.baseline_list.clear()
+        p = theme.palette()
+        if baseline:
+            try:
+                info = classify(baseline)
+                label = f"{info.name}    {info.type_label} · {info.human_size}"
+            except Exception:
+                label = Path(baseline).name
+            item = QListWidgetItem(label)
+            item.setData(Qt.ItemDataRole.UserRole, baseline)
+            item.setToolTip(baseline)
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            self.baseline_list.addItem(item)
+        else:
+            item = QListWidgetItem("拖入或选择基准文件")
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
+            item.setForeground(QBrush(QColor(p.text_secondary)))
+            self.baseline_list.addItem(item)
 
     # ------------------------------------------------------------------ run
     def _start(self) -> None:
@@ -672,9 +735,11 @@ class BatchCompareDialog(QDialog):
         self.btn_remove.setEnabled(not running)
         self.btn_clear.setEnabled(not running)
         self.file_list.setEnabled(not running)
+        self.baseline_list.setEnabled(not running)
         self.combo_baseline.setEnabled(not running and self.file_list.count() > 0)
         self.btn_pick_baseline.setEnabled(not running)
         self.baseline_zone.setEnabled(not running)
+        self.all_zone.setEnabled(not running)
         self.btn_cancel.setVisible(running)
         self.btn_cancel.setEnabled(running)
 
