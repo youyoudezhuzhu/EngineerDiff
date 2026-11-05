@@ -19,7 +19,9 @@ from typing import Iterable
 from PySide6.QtCore import QPoint, QRect, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
+    QPushButton,
     QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
@@ -55,20 +57,30 @@ def refresh_palette() -> None:
 
 
 class SheetTabBar(QWidget):
-    """底部 Sheet 标签栏（自绘，便于精确控制红色/橙红文字）。"""
+    """底部 Sheet 标签栏（自绘，便于精确控制红色/橙红文字）。
+
+    支持鼠标滚轮、按住拖动、左右箭头三种方式横向滚动；选中标签会自动滚入
+    可视区域，避免工作表很多时选不到后面的表。
+    """
 
     tab_clicked = Signal(str)
+    overflow_changed = Signal(bool)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setFixedHeight(TAB_HEIGHT)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
         self._names: list[str] = []
         self._status: dict[str, str] = {}
         self._selected: str | None = None
         self._offset = 0
         self._rects: list[tuple[str, QRect]] = []
+        self._drag_start_x = 0
+        self._drag_start_offset = 0
+        self._dragging = False
+        self._drag_moved = False
 
     # ------------------------------------------------------------------
     def set_tabs(
@@ -91,6 +103,8 @@ class SheetTabBar(QWidget):
         if self._selected not in self._names:
             self._selected = self._names[0] if self._names else None
         self._offset = max(0, min(self._offset, max(0, self._total_width() - self.width())))
+        self._ensure_selected_visible()
+        self.overflow_changed.emit(self._overflow() > 0)
         self.update()
 
     def names(self) -> list[str]:
@@ -98,7 +112,41 @@ class SheetTabBar(QWidget):
 
     def set_selected(self, name: str | None) -> None:
         self._selected = name
+        self._ensure_selected_visible()
         self.update()
+
+    def _overflow(self) -> int:
+        return max(0, self._total_width() - self.width())
+
+    def has_overflow(self) -> bool:
+        return self._overflow() > 0
+
+    def scroll_step(self, direction: int, fraction: float = 0.82) -> None:
+        """向左/右横向移动一屏；direction=-1 左，+1 右。"""
+        if self._overflow() <= 0:
+            return
+        page = max(48, int(self.width() * fraction))
+        self._offset = max(0, min(self._overflow(), self._offset + direction * page))
+        self.update()
+
+    def _ensure_selected_visible(self) -> None:
+        if self._selected not in self._names or self._overflow() <= 0:
+            return
+        self._layout()
+        for name, rect in self._rects:
+            if name != self._selected:
+                continue
+            if rect.left() < 0:
+                self._offset = max(0, self._offset + rect.left())
+            elif rect.right() > self.width():
+                self._offset = min(self._overflow(), self._offset + rect.right() - self.width())
+            return
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._offset = max(0, min(self._offset, self._overflow()))
+        self._ensure_selected_visible()
+        self.overflow_changed.emit(self._overflow() > 0)
 
     def selected(self) -> str | None:
         return self._selected
@@ -170,21 +218,51 @@ class SheetTabBar(QWidget):
 
     def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt API
         if event.button() == Qt.LeftButton:
-            position = event.position().toPoint()
-            for name, rect in self._layout():
-                if rect.contains(position):
-                    self.tab_clicked.emit(name)
-                    event.accept()
-                    return
+            self._drag_start_x = event.position().toPoint().x()
+            self._drag_start_offset = self._offset
+            self._dragging = True
+            self._drag_moved = False
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+            return
         super().mousePressEvent(event)
 
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if self._dragging and self._overflow() > 0:
+            delta = event.position().toPoint().x() - self._drag_start_x
+            if abs(delta) > 3:
+                self._drag_moved = True
+            self._offset = max(0, min(self._overflow(), self._drag_start_offset - delta))
+            self.update()
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if event.button() == Qt.LeftButton and self._dragging:
+            self._dragging = False
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+            if not self._drag_moved:
+                position = event.position().toPoint()
+                for name, rect in self._layout():
+                    if rect.contains(position):
+                        self.tab_clicked.emit(name)
+                        break
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
     def wheelEvent(self, event) -> None:  # noqa: N802 - Qt API
-        overflow = max(0, self._total_width() - self.width())
+        overflow = self._overflow()
         if overflow <= 0:
             super().wheelEvent(event)
             return
         delta = event.angleDelta().y()
-        self._offset = max(0, min(overflow, self._offset - (delta // 2 if delta else 0)))
+        if delta == 0:
+            delta = event.angleDelta().x()
+        step = max(48, abs(delta) // 2 if delta else 48)
+        direction = -1 if delta > 0 else 1
+        self._offset = max(0, min(overflow, self._offset + direction * step))
         self.update()
         event.accept()
 
@@ -209,11 +287,32 @@ class SpreadsheetSide(QWidget):
         self._tab_bar = SheetTabBar(self)
         self._tab_bar.tab_clicked.connect(self._on_tab_clicked)
 
+        self._tab_left = QPushButton("‹")
+        self._tab_left.setObjectName("tool")
+        self._tab_left.setFixedSize(24, TAB_HEIGHT - 2)
+        self._tab_left.setToolTip("向左滚动工作表标签（也可在标签上滚轮/拖动）")
+        self._tab_right = QPushButton("›")
+        self._tab_right.setObjectName("tool")
+        self._tab_right.setFixedSize(24, TAB_HEIGHT - 2)
+        self._tab_right.setToolTip("向右滚动工作表标签（也可在标签上滚轮/拖动）")
+        self._tab_left.clicked.connect(lambda: self._tab_bar.scroll_step(-1))
+        self._tab_right.clicked.connect(lambda: self._tab_bar.scroll_step(1))
+        tab_row = QWidget()
+        tab_layout = QHBoxLayout(tab_row)
+        tab_layout.setContentsMargins(0, 0, 0, 0)
+        tab_layout.setSpacing(0)
+        tab_layout.addWidget(self._tab_left)
+        tab_layout.addWidget(self._tab_bar, 1)
+        tab_layout.addWidget(self._tab_right)
+        self._tab_row = tab_row
+        self._tab_bar.overflow_changed.connect(self._update_tab_arrows)
+        self._update_tab_arrows(False)
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(self._stack, 1)
-        layout.addWidget(self._tab_bar, 0)
+        layout.addWidget(tab_row, 0)
 
         self._workbook: Workbook | None = None
         self._comparison: WorkbookComparison | None = None
@@ -352,6 +451,13 @@ class SpreadsheetSide(QWidget):
     # ------------------------------------------------------------------
     # 内部
     # ------------------------------------------------------------------
+
+    def _update_tab_arrows(self, has_overflow: bool) -> None:
+        self._tab_left.setVisible(bool(has_overflow))
+        self._tab_right.setVisible(bool(has_overflow))
+        if has_overflow:
+            self._tab_left.setEnabled(True)
+            self._tab_right.setEnabled(True)
 
     def _tab_names(self) -> list[str]:
         if self._comparison is not None:

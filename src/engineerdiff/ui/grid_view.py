@@ -20,7 +20,7 @@ import math
 from bisect import bisect_right
 from typing import Iterable
 
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import QAbstractScrollArea, QFrame, QWidget
 
@@ -354,6 +354,32 @@ class GridView(QAbstractScrollArea):
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
         super().resizeEvent(event)
         self._update_scrollbars()
+
+    def _handle_horizontal_wheel(self, event) -> bool:
+        hbar = self.horizontalScrollBar()
+        vbar = self.verticalScrollBar()
+        if hbar.maximum() <= 0:
+            return False
+        delta_y = event.angleDelta().y()
+        delta_x = event.angleDelta().x()
+        shift = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+        fallback = vbar.maximum() <= 0
+        if not (shift or fallback or delta_x):
+            return False
+        delta = delta_y or delta_x
+        if delta:
+            hbar.setValue(hbar.value() - delta)
+        event.accept()
+        return True
+
+    def wheelEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if not self._handle_horizontal_wheel(event):
+            super().wheelEvent(event)
+
+    def viewportEvent(self, event) -> bool:  # noqa: N802 - Qt API
+        if event.type() == QEvent.Type.Wheel and self._handle_horizontal_wheel(event):
+            return True
+        return super().viewportEvent(event)
 
     def scrollContentsBy(self, dx: int, dy: int) -> None:  # noqa: N802 - Qt API
         super().scrollContentsBy(dx, dy)

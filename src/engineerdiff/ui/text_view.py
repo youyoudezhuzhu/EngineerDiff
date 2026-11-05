@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QRect, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QAbstractScrollArea
 
@@ -192,6 +192,34 @@ class TextView(QAbstractScrollArea):
         if row is not None:
             self.line_activated.emit(row)
         super().mouseDoubleClickEvent(event)
+
+    # ------------------------------------------------------------------ wheel
+    def _handle_horizontal_wheel(self, event) -> bool:
+        """Shift+滚轮或触控板横向滚动；单行超长文本时普通滚轮也可横向滚动。"""
+        hbar = self.horizontalScrollBar()
+        vbar = self.verticalScrollBar()
+        if hbar.maximum() <= 0:
+            return False
+        delta_y = event.angleDelta().y()
+        delta_x = event.angleDelta().x()
+        shift = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+        fallback = vbar.maximum() <= 0
+        if not (shift or fallback or delta_x):
+            return False
+        delta = delta_y or delta_x
+        if delta:
+            hbar.setValue(hbar.value() - delta)
+        event.accept()
+        return True
+
+    def wheelEvent(self, event):  # noqa: N802
+        if not self._handle_horizontal_wheel(event):
+            super().wheelEvent(event)
+
+    def viewportEvent(self, event):  # noqa: N802
+        if event.type() == QEvent.Type.Wheel and self._handle_horizontal_wheel(event):
+            return True
+        return super().viewportEvent(event)
 
     # ------------------------------------------------------------------ paint
     def paintEvent(self, event):  # noqa: N802

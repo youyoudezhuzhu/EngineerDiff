@@ -884,3 +884,34 @@ def test_screenshots_written() -> None:
         path = SHOT_DIR / name
         assert path.exists(), f"缺少截图：{path}"
         assert path.stat().st_size > 1000
+
+
+@pytest.mark.gui
+def test_many_sheet_tabs_are_scrollable(qapp) -> None:
+    """大量 Sheet 时标签栏可滚动；选中后面的表会自动滚入可视区。"""
+    names = [f"Sheet{i:02d}" for i in range(30)]
+    workbook = _workbook(*[_sheet(name, [["x"]]) for name in names])
+    side = SpreadsheetSide()
+    side.resize(360, 240)
+    side.load(workbook, None, "left")
+    side.show()
+    qapp.processEvents()
+
+    bar = side.tab_bar()
+    assert bar.has_overflow()
+    assert side._tab_right.isVisible() is True
+    assert side._tab_left.isVisible() is True
+
+    side.show_sheet(names[-1])
+    qapp.processEvents()
+    last_rect = bar.tab_rect(names[-1])
+    assert last_rect.left() >= 0
+    assert last_rect.right() <= bar.width()
+    assert bar._offset > 0
+
+    before = bar._offset
+    side._tab_left.click()
+    qapp.processEvents()
+    assert bar._offset <= before
+
+    side.close()
