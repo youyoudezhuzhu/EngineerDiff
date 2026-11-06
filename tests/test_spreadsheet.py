@@ -915,3 +915,29 @@ def test_many_sheet_tabs_are_scrollable(qapp) -> None:
     assert bar._offset <= before
 
     side.close()
+
+
+@pytest.mark.gui
+def test_grid_column_and_row_resize(qapp) -> None:
+    """表头边界拖动/接口调整后，列宽行高与内容尺寸同步更新。"""
+    from engineerdiff.ui.grid_view import GridView
+
+    sheet = _sheet("表", [["A", "B"], ["C", "D"]])
+    workbook = _workbook(sheet)
+    side = SpreadsheetSide()
+    side.resize(420, 300)
+    side.load(workbook, None, "left", show_tabs=False)
+    side.show()
+    qapp.processEvents()
+    grid = side.grid()
+
+    grid.set_column_width(0, 180)
+    grid.set_row_height(0, 44)
+    qapp.processEvents()
+    rect = grid.cell_rect(0, 0)
+    assert rect.width() == pytest.approx(180 * grid.zoom())
+    assert rect.height() == pytest.approx(44 * grid.zoom())
+    assert sheet.col_widths[0] == pytest.approx(180)
+    assert sheet.row_heights[0] == pytest.approx(44)
+
+    side.close()

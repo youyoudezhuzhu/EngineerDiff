@@ -24,6 +24,7 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
   基准可拖入或手动选择，Excel 按 Sheet 分组折叠，图片支持原图对照；
 - **Fluent 2 界面**：单文件 / 批量顶部导航、浅色/深色/跟随系统、原生标题栏；
 - **快捷操作**：拖入文件自动加载并比较、图片滚轮缩放、Ctrl+V 粘贴截图、F7/F8 差异导航；
+- **表格可调**：Excel/CSV 可拖动列标/行号边界调整列宽行高，不修改原文件；
 - **OCR 校对**：查看文字框与置信度、修改识别文本、人工建立左右对应后重新比较；
 - 纯离线，无账号、无云服务、无文件上传。
 
@@ -41,8 +42,8 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 
 从 [GitHub Releases](https://github.com/youyoudezhuzhu/EngineerDiff/releases/latest) 下载：
 
-- `EngineerDiff-1.2.6-Setup-x64.exe`：Windows 10/11 x64 安装包；
-- `EngineerDiff-1.2.6-portable-win64.zip`：便携版，解压后保持 `_internal` 目录完整。
+- `EngineerDiff-1.2.7-Setup-x64.exe`：Windows 10/11 x64 安装包；
+- `EngineerDiff-1.2.7-portable-win64.zip`：便携版，解压后保持 `_internal` 目录完整。
 
 使用步骤：
 

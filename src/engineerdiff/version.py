@@ -1,5 +1,5 @@
 """版本信息。构建时由脚本校验。"""
-__version__ = "1.2.6"
+__version__ = "1.2.7"
 APP_NAME = "EngineerDiff"
 APP_NAME_CN = "EngineerDiff 工程文件差异比较"
 ORG_NAME = "EngineerDiff"

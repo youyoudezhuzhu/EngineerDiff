@@ -75,6 +75,7 @@ class GridView(QAbstractScrollArea):
         self.setFrameShape(QFrame.NoFrame)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
         self.viewport().setAutoFillBackground(False)
 
         self._sheet: Sheet | None = None
@@ -97,6 +98,13 @@ class GridView(QAbstractScrollArea):
 
         self._anchors: list[tuple[int, int, int, int]] = []
         self._covered: set[tuple[int, int]] = set()
+
+        # 列宽/行高手动调整（类似 Excel 拖动表头边界）
+        self._resize_mode: str | None = None
+        self._resize_index = -1
+        self._resize_start_x = 0.0
+        self._resize_start_y = 0.0
+        self._resize_original = 0.0
 
     # ------------------------------------------------------------------
     # 契约接口
@@ -186,6 +194,26 @@ class GridView(QAbstractScrollArea):
 
     def current_cell(self) -> tuple[int, int] | None:
         return self._selected
+
+    # ------------------------------------------------------------------
+    # 手动列宽 / 行高（单位：缩放前的基础像素，类似 Excel）
+    # ------------------------------------------------------------------
+
+    def set_column_width(self, col: int, width: float) -> None:
+        sheet = self._sheet
+        if sheet is None or not (0 <= col < sheet.ncols):
+            return
+        sheet.col_widths[int(col)] = max(24.0, float(width))
+        self._rebuild_geometry()
+        self.viewport().update()
+
+    def set_row_height(self, row: int, height: float) -> None:
+        sheet = self._sheet
+        if sheet is None or not (0 <= row < sheet.nrows):
+            return
+        sheet.row_heights[int(row)] = max(18.0, float(height))
+        self._rebuild_geometry()
+        self.viewport().update()
 
     def set_show_grid(self, show: bool) -> None:
         self._show_grid = bool(show)
@@ -406,8 +434,91 @@ class GridView(QAbstractScrollArea):
             return None
         return self._visible_rows[display_index], col
 
+    # ------------------------------------------------------------------
+    # 表头边界拖动：调整列宽 / 行高
+    # ------------------------------------------------------------------
+
+    def _column_boundary_at(self, position: QPoint) -> int | None:
+        sheet = self._sheet
+        if sheet is None or position.y() > HEADER_HEIGHT or position.x() < HEADER_WIDTH:
+            return None
+        hscroll = self.horizontalScrollBar().value()
+        for col in range(sheet.ncols):
+            boundary = HEADER_WIDTH + self._col_offsets[col + 1] - hscroll
+            if abs(position.x() - boundary) <= 5:
+                return col
+        return None
+
+    def _row_boundary_at(self, position: QPoint) -> tuple[int, int] | None:
+        sheet = self._sheet
+        if sheet is None or position.x() > HEADER_WIDTH or position.y() < HEADER_HEIGHT:
+            return None
+        vscroll = self.verticalScrollBar().value()
+        for index, row in enumerate(self._visible_rows):
+            boundary = HEADER_HEIGHT + self._row_offsets[index + 1] - vscroll
+            if abs(position.y() - boundary) <= 5:
+                return index, row
+        return None
+
+    def _update_resize_cursor(self, position: QPoint) -> None:
+        if self._resize_mode == "col":
+            self.viewport().setCursor(Qt.CursorShape.SizeHorCursor)
+            return
+        if self._resize_mode == "row":
+            self.viewport().setCursor(Qt.CursorShape.SizeVerCursor)
+            return
+        if self._column_boundary_at(position) is not None:
+            self.viewport().setCursor(Qt.CursorShape.SizeHorCursor)
+        elif self._row_boundary_at(position) is not None:
+            self.viewport().setCursor(Qt.CursorShape.SizeVerCursor)
+        else:
+            self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+
+    def _begin_resize(self, position: QPoint) -> bool:
+        col = self._column_boundary_at(position)
+        if col is not None:
+            self._resize_mode = "col"
+            self._resize_index = col
+            self._resize_start_x = float(position.x())
+            self._resize_start_y = float(position.y())
+            self._resize_original = self._col_width(col)
+            self.viewport().setCursor(Qt.CursorShape.SizeHorCursor)
+            return True
+        row_boundary = self._row_boundary_at(position)
+        if row_boundary is not None:
+            _index, row = row_boundary
+            self._resize_mode = "row"
+            self._resize_index = row
+            self._resize_start_x = float(position.x())
+            self._resize_start_y = float(position.y())
+            self._resize_original = self._row_height(row)
+            self.viewport().setCursor(Qt.CursorShape.SizeVerCursor)
+            return True
+        return False
+
+    def _resize_to(self, position: QPoint) -> None:
+        sheet = self._sheet
+        if sheet is None:
+            return
+        if self._resize_mode == "col":
+            delta = float(position.x()) - self._resize_start_x
+            display_width = max(24.0, self._resize_original + delta)
+            sheet.col_widths[self._resize_index] = max(24.0, display_width / max(0.01, self._zoom))
+            self._rebuild_geometry()
+            self.viewport().update()
+        elif self._resize_mode == "row":
+            delta = float(position.y()) - self._resize_start_y
+            display_height = max(18.0, self._resize_original + delta)
+            sheet.row_heights[self._resize_index] = max(18.0, display_height / max(0.01, self._zoom))
+            self._rebuild_geometry()
+            self.viewport().update()
+
     def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt API
         if event.button() == Qt.LeftButton:
+            position = event.position().toPoint()
+            if self._begin_resize(position):
+                event.accept()
+                return
             cell = self._cell_at_viewport(event.position())
             if cell is not None:
                 self._selected = cell
@@ -416,6 +527,24 @@ class GridView(QAbstractScrollArea):
                 event.accept()
                 return
         super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802 - Qt API
+        position = event.position().toPoint()
+        if self._resize_mode is not None:
+            self._resize_to(position)
+            event.accept()
+            return
+        self._update_resize_cursor(position)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if event.button() == Qt.LeftButton and self._resize_mode is not None:
+            self._resize_mode = None
+            self._resize_index = -1
+            self._update_resize_cursor(event.position().toPoint())
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event) -> None:  # noqa: N802 - Qt API
         sheet = self._sheet
