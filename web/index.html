@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="EngineerDiff 网页版：在浏览器中比较 TXT / CSV / Excel 文件差异，无需安装、不上传文件。" />
+  <meta name="theme-color" content="#f3f3f3" />
+  <title>EngineerDiff 网页版</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="vendor/xlsx.full.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="appbar">
+    <div class="brand">
+      <img class="brand-icon" src="assets/icon-192.png" alt="" width="26" height="26" />
+      <span class="brand-name">EngineerDiff</span>
+      <span class="brand-sub">网页版</span>
+    </div>
+    <nav class="nav-tabs" role="tablist" aria-label="工作模式">
+      <button type="button" role="tab" data-page="single" class="active" aria-selected="true">单文件比较</button>
+      <button type="button" role="tab" data-page="batch" aria-selected="false">批量比较</button>
+    </nav>
+    <div class="appbar-actions">
+      <button id="btn-theme" class="icon-btn" type="button" title="切换主题" aria-label="切换主题"></button>
+      <button id="btn-settings" class="icon-btn" type="button" title="比较设置">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm0 1.8a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4Z"/><path d="M10 2.2h4l.4 2.1c.5.2 1 .5 1.5.9l2-.8 2 3.4-1.6 1.5c.1.5.1 1.1 0 1.6l1.6 1.5-2 3.4-2-.8c-.5.4-1 .7-1.5.9l-.4 2.1h-4l-.4-2.1c-.5-.2-1-.5-1.5-.9l-2 .8-2-3.4 1.6-1.5a6.6 6.6 0 0 1 0-1.6L4.1 7.8l2-3.4 2 .8c.5-.4 1-.7 1.5-.9L10 2.2Z"/></svg>
+        <span>设置</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+  <div id="busy" class="busy" hidden><span class="spinner" aria-hidden="true"></span><span class="busy-text">正在处理…</span></div>
+
+  <main id="main">
+    <!-- ============================= 单文件比较 ============================= -->
+    <section id="page-single" class="page" aria-label="单文件比较">
+      <div class="filebar">
+        <div class="slot" id="slot-left" role="button" tabindex="0" aria-label="选择或拖入基准文件 A"></div>
+        <button id="btn-swap" class="icon-btn swap" type="button" title="交换左右文件" aria-label="交换左右文件">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7.3 3.3 3.3 7.3a1 1 0 0 0 0 1.4l4 4 1.4-1.4L6.4 9H20V7H6.4l2.3-2.3-1.4-1.4Zm9.4 8-1.4 1.4 2.3 2.3H4v2h13.6l-2.3 2.3 1.4 1.4 4-4a1 1 0 0 0 0-1.4l-4-4Z"/></svg>
+        </button>
+        <div class="slot" id="slot-right" role="button" tabindex="0" aria-label="选择或拖入待比较文件 B"></div>
+        <button id="btn-compare" class="btn primary" type="button">开始比较</button>
+      </div>
+
+      <div class="mobile-switch" id="mobile-switch" role="tablist" aria-label="切换左右栏">
+        <button id="mobile-a" type="button" class="active" role="tab">A 基准</button>
+        <button id="mobile-b" type="button" role="tab">B 待比较</button>
+      </div>
+
+      <div class="toolbar" role="toolbar" aria-label="比较工具栏">
+        <div class="tool-group">
+          <button id="btn-prev" class="icon-btn" type="button" title="上一处差异（F7）" aria-label="上一处差异">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M14.7 5.3 8 12l6.7 6.7 1.4-1.4L10.8 12l5.3-5.3-1.4-1.4Z"/></svg>
+          </button>
+          <span id="index-label" class="index-label">0 / 0</span>
+          <button id="btn-next" class="icon-btn" type="button" title="下一处差异（F8）" aria-label="下一处差异">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="m9.3 5.3 6.7 6.7-6.7 6.7-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
+          </button>
+        </div>
+
+        <div id="view-toggle" class="segmented" hidden>
+          <button type="button" data-view="text">文本</button>
+          <button type="button" data-view="table">表格</button>
+        </div>
+
+        <label class="check"><input id="cb-only-diffs" type="checkbox" /> 仅显示差异</label>
+
+        <div id="text-tools" class="tool-group">
+          <label class="check"><input id="cb-sync" type="checkbox" checked /> 同步滚动</label>
+        </div>
+
+        <div id="table-tools" class="tool-group" hidden>
+          <label class="check"><input id="cb-sheet-sync" type="checkbox" checked /> 同步 Sheet</label>
+          <div class="zoom-group">
+            <button id="zoom-out" class="icon-btn" type="button" title="缩小表格" aria-label="缩小表格">−</button>
+            <button id="zoom-label" class="zoom-label" type="button" title="恢复 100%">100%</button>
+            <button id="zoom-in" class="icon-btn" type="button" title="放大表格" aria-label="放大表格">＋</button>
+          </div>
+        </div>
+
+        <span class="toolbar-spacer"></span>
+        <button id="btn-copy-summary" class="btn ghost" type="button" title="复制当前差异列表">复制差异</button>
+      </div>
+
+      <div id="compare-area" class="compare-area" data-mobile-side="left">
+        <div class="pane" data-side="left">
+          <div class="pane-head" id="head-left"></div>
+          <div class="pane-body-host" id="pane-left"></div>
+        </div>
+        <div class="pane" data-side="right">
+          <div class="pane-head" id="head-right"></div>
+          <div class="pane-body-host" id="pane-right"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================= 批量比较 ============================= -->
+    <section id="page-batch" class="page" aria-label="批量比较" hidden></section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status-type" class="status-type">未选择文件</span>
+    <span id="status-text" class="status-text">就绪</span>
+    <span class="statusbar-spacer"></span>
+    <span id="status-elapsed" class="status-elapsed"></span>
+    <span id="status-count" class="status-count" data-tone="ok">无差异</span>
+    <span id="app-version" class="status-version">网页版</span>
+  </footer>
+
+  <div id="toast-host" class="toast-host" aria-live="polite"></div>
+
+  <!-- ============================= 设置 ============================= -->
+  <div id="settings-dialog" class="modal" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="dialog-head"><h2 id="settings-title">比较设置</h2></header>
+      <div class="dialog-body">
+        <p class="dialog-hint">设置将在下一次比较（或重新比较）时生效；默认严格比较。</p>
+
+        <fieldset>
+          <legend>外观</legend>
+          <label class="field">
+            <span>界面主题</span>
+            <select id="set-theme">
+              <option value="system">跟随系统</option>
+              <option value="light">浅色</option>
+              <option value="dark">深色</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>文本比较</legend>
+          <label class="check"><input id="set-eol" type="checkbox" /> 忽略换行符差异（CRLF / LF / 末尾换行）</label>
+          <label class="check"><input id="set-outer" type="checkbox" /> 忽略每行前后空格</label>
+          <label class="check"><input id="set-all" type="checkbox" /> 忽略全部空白字符</label>
+          <label class="check"><input id="set-case" type="checkbox" /> 忽略大小写</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>表格 / Excel 比较</legend>
+          <label class="field">
+            <span>公式比较</span>
+            <select id="set-formula">
+              <option value="formula">按公式表达式比较（推荐，严格）</option>
+              <option value="value">按公式缓存值比较</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>数值容差</span>
+            <input id="set-tolerance" type="number" min="0" step="0.000001" value="0" />
+          </label>
+          <label class="check"><input id="set-smart" type="checkbox" /> 智能行对齐（实验性，用于识别整行插入/删除）</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>通用</legend>
+          <label class="check"><input id="set-sync" type="checkbox" checked /> 默认同步滚动</label>
+          <label class="check"><input id="set-sheet-sync" type="checkbox" checked /> 默认同步切换 Excel 工作表</label>
+        </fieldset>
+      </div>
+      <footer class="dialog-foot">
+        <button id="set-reset" class="btn ghost" type="button">恢复默认</button>
+        <span class="dialog-spacer"></span>
+        <button id="set-cancel" class="btn" type="button">取消</button>
+        <button id="set-apply" class="btn primary" type="button">确定</button>
+      </footer>
+    </div>
+  </div>
+
+  <noscript>
+    <p class="noscript">EngineerDiff 网页版需要启用 JavaScript 才能运行。</p>
+  </noscript>
+</body>
+</html>

@@ -11,6 +11,10 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 
 所有比较完全在本机完成；OCR 模型随安装包内置，**不联网、不上传文件、无需安装 Python / Office**。
 
+> **网页版（免安装）**：<https://youyoudezhuzhu.github.io/EngineerDiff/>
+> 支持 TXT / CSV / XLSX / XLS 与批量比较，手机可直接打开查看和选文件；
+> 图片 OCR 仍请使用桌面版。详见 [网页版说明](docs/web-version.md)。
+
 ![EngineerDiff 单文件比较](docs/screenshots/text-compare.png)
 
 ## 核心能力
@@ -26,6 +30,7 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 - **快捷操作**：拖入文件自动加载并比较、图片滚轮缩放、Ctrl+V 粘贴截图、F7/F8 差异导航；
 - **表格可调**：Excel/CSV 可拖动列标/行号边界调整列宽行高，不修改原文件；
 - **OCR 校对**：查看文字框与置信度、修改识别文本、人工建立左右对应后重新比较；
+- **网页版**：免安装、手机可看、可离线（PWA），TXT / CSV / Excel + 批量比较与桌面版结果一致；
 - 纯离线，无账号、无云服务、无文件上传。
 
 ## 界面
@@ -37,6 +42,10 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 | 深色主题 | 图片 OCR |
 |---|---|
 | ![深色主题](docs/screenshots/dark-mode.png) | ![OCR 差异框](docs/screenshots/image-ocr-boxes.png) |
+
+| 网页版 | 网页版手机 |
+|---|---|
+| ![网页版](docs/screenshots/screenshot-web-excel.png) | ![网页版手机](docs/screenshots/screenshot-web-mobile.png) |
 
 ## 下载与使用
 
@@ -51,7 +60,8 @@ EngineerDiff 用于核对装置软件版本、保护定值表、配置文件、E
 2. 用“上一处/下一处”或 F7/F8 查看差异；图片支持滚轮缩放和拖动；
 3. 切换到“批量比较”，拖入基准与多个候选文件，一次查看全部差异。
 
-详细说明：[用户手册](docs/user-guide.md)；限制：[已知限制](docs/known-limitations.md)。
+详细说明：[用户手册](docs/user-guide.md)；限制：[已知限制](docs/known-limitations.md)；
+网页版：[网页版说明](docs/web-version.md)（<https://youyoudezhuzhu.github.io/EngineerDiff/>）。
 
 ## 系统要求
 
@@ -80,6 +90,12 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest -q
 .venv/bin/python -m engineerdiff --self-test
 ```
 
+网页版测试（需要 Node.js 20+ 与 python3，表格用例另需 `openpyxl`、`xlrd`）：
+
+```bash
+node --test web/tests/*.test.mjs
+```
+
 Windows 安装包构建：
 
 ```powershell
@@ -91,6 +107,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 ## 文档与许可证
 
 - [用户手册](docs/user-guide.md)
+- [网页版说明](docs/web-version.md)
 - [已知限制](docs/known-limitations.md)
 - [Windows Defender / SmartScreen](docs/windows-defender.md)
 - [代码签名 / 智能应用控制](docs/code-signing.md)
