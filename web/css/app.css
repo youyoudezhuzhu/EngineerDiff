@@ -1433,7 +1433,29 @@ mark.chg {
     --appbar-h: auto;
   }
 
+  /* 手机端改为可纵向滚动的文档流：不再把结果区硬塞进一屏。
+     这样长表格 / 批量矩阵可以向下滚动查看，而不是只剩顶部一点。 */
+  body {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  #main {
+    flex: 1 0 auto;
+    overflow: visible;
+  }
+
+  .page {
+    min-height: 0;
+    overflow: visible;
+  }
+
   .appbar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
     flex-wrap: wrap;
     gap: 6px 10px;
     padding: 6px 10px;
@@ -1501,6 +1523,11 @@ mark.chg {
 
   .compare-area {
     grid-template-columns: 1fr;
+    /* 固定高度保证结果区在 20:9 / 21:9 上都有足够可视空间；
+       dvh 会随浏览器工具栏收起而变化，避免被地址栏遮挡。 */
+    flex: 0 0 auto;
+    height: 68dvh;
+    min-height: 320px;
   }
 
   .compare-area .pane[data-side="right"] {
@@ -1516,18 +1543,28 @@ mark.chg {
   }
 
   .toolbar {
-    flex-wrap: wrap;
-    overflow: visible;
-    gap: 4px 10px;
+    /* 保持单行并允许横向滚动，避免换行挤压结果区高度 */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 10px;
     min-height: 38px;
     padding: 2px 2px 4px;
+    scrollbar-width: none;
+  }
+
+  .toolbar::-webkit-scrollbar {
+    display: none;
   }
 
   .toolbar-spacer {
     display: none;
   }
 
-  .toolbar .tool-group {
+  .toolbar .tool-group,
+  .toolbar .check,
+  .toolbar .segmented,
+  .toolbar .zoom-group {
     flex: 0 0 auto;
   }
 
@@ -1544,8 +1581,24 @@ mark.chg {
   }
 
   .statusbar {
+    /* 手机端固定在底部，页面内容从它上方滚过 */
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
     gap: 8px;
     padding: 0 10px;
+  }
+
+  /* 批量页同样参与文档滚动，结果表固定高度可上下/左右滚动 */
+  #page-batch {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .batch-result {
+    flex: 0 0 auto;
+    height: 66dvh;
+    min-height: 300px;
   }
 
   .status-version {

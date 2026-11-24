@@ -1,7 +1,7 @@
 /* EngineerDiff 网页版 Service Worker：离线缓存应用外壳。
  * 差异比较全部在本地完成，缓存文件不含任何用户数据。
  */
-const CACHE = 'engineerdiff-web-v1';
+const CACHE = 'engineerdiff-web-v2';
 const SHELL = [
   './',
   'index.html',
